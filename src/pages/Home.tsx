@@ -6,7 +6,8 @@ export default function Home() {
 
   return (
     <div style={{ textAlign: 'center', marginTop: '50px' }}>
-      <h1>Welcome to Typlix</h1>
+      <img src="/logo.png" alt="Typlix Logo" style={{ width: '150px', marginBottom: '20px' }} />
+      <h1 style={{ margin: 0 }}>Welcome to Typlix</h1>
       <p>A simple typing game to improve your speed.</p>
       
       <button 

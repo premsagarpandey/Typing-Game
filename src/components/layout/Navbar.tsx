@@ -4,7 +4,9 @@ import { Link } from 'react-router-dom';
 export default function Navbar() {
   return (
     <nav style={{ background: '#3b82f6', padding: '15px', color: 'white', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-      <h2 style={{ margin: 0 }}>Typlix</h2>
+      <Link to="/" style={{ display: 'flex', alignItems: 'center', textDecoration: 'none' }}>
+        <img src="/logo.png" alt="Typlix Logo" style={{ height: '40px', background: 'white', padding: '4px', borderRadius: '8px' }} />
+      </Link>
       
       <div style={{ display: 'flex', gap: '15px' }}>
         <Link to="/" style={{ color: 'white', textDecoration: 'none' }}>Home</Link>
