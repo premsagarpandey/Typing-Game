@@ -1,13 +1,14 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { calculateWPM, calculateAccuracy } from '../utils/calculations';
-import { getRandomText } from '../data/typingContent';
+import { generateLevelText } from '../data/levels';
+import type { LevelConfig } from '../data/levels';
 
-export type GameStatus = 'idle' | 'playing' | 'finished';
-export type GameMode = 'quick' | 'speed' | 'quotes' | 'words'; // Simplified for now
+export type GameStatus = 'idle' | 'playing' | 'finished' | 'passed' | 'failed';
 
-export function useTypingGame(initialTime: number = 30, mode: GameMode = 'words') {
+export function useTypingGame(initialTime: number = 30, levelConfig?: LevelConfig) {
   const [status, setStatus] = useState<GameStatus>('idle');
-  const [timeRemaining, setTimeRemaining] = useState(initialTime);
+  const actualInitialTime = levelConfig ? levelConfig.timeLimit : initialTime;
+  const [timeRemaining, setTimeRemaining] = useState(actualInitialTime);
   const [targetText, setTargetText] = useState('');
   const [typedText, setTypedText] = useState('');
   
@@ -19,13 +20,24 @@ export function useTypingGame(initialTime: number = 30, mode: GameMode = 'words'
   const [correctChars, setCorrectChars] = useState(0);
   const [totalCharsTyped, setTotalCharsTyped] = useState(0);
 
+  const correctCharsRef = useRef(0);
+  const totalCharsTypedRef = useRef(0);
+  
+  // Keep refs updated for timer closure
+  useEffect(() => {
+    correctCharsRef.current = correctChars;
+    totalCharsTypedRef.current = totalCharsTyped;
+  }, [correctChars, totalCharsTyped]);
+
   // Initialize text
   useEffect(() => {
     if (status === 'idle') {
-      const textMode = mode === 'quotes' ? 'quotes' : 'words';
-      setTargetText(getRandomText(textMode, 30));
+      setTimeRemaining(actualInitialTime);
+      if (levelConfig) {
+        setTargetText(generateLevelText(levelConfig, 30));
+      }
     }
-  }, [status, mode]);
+  }, [status, levelConfig, actualInitialTime]);
 
   // Timer logic
   useEffect(() => {
@@ -34,7 +46,19 @@ export function useTypingGame(initialTime: number = 30, mode: GameMode = 'words'
       interval = setInterval(() => {
         setTimeRemaining((prev) => {
           if (prev <= 1) {
-            setStatus('finished');
+            // Timer hit 0
+            if (levelConfig) {
+              const finalWpm = calculateWPM(correctCharsRef.current, actualInitialTime);
+              const finalAcc = calculateAccuracy(correctCharsRef.current, totalCharsTypedRef.current);
+              
+              if (finalWpm >= levelConfig.targetWpm && finalAcc >= levelConfig.targetAccuracy) {
+                setStatus('passed');
+              } else {
+                setStatus('failed');
+              }
+            } else {
+              setStatus('finished');
+            }
             return 0;
           }
           return prev - 1;
@@ -42,33 +66,31 @@ export function useTypingGame(initialTime: number = 30, mode: GameMode = 'words'
       }, 1000);
     }
     return () => clearInterval(interval);
-  }, [status, timeRemaining]);
+  }, [status, timeRemaining, levelConfig, actualInitialTime]);
 
   // Calculate WPM and Accuracy continuously
   useEffect(() => {
     if (status === 'playing') {
-      const timeElapsed = initialTime - timeRemaining;
+      const timeElapsed = actualInitialTime - timeRemaining;
       setWpm(calculateWPM(correctChars, timeElapsed));
       setAccuracy(calculateAccuracy(correctChars, totalCharsTyped));
     }
-  }, [correctChars, totalCharsTyped, timeRemaining, initialTime, status]);
+  }, [correctChars, totalCharsTyped, timeRemaining, actualInitialTime, status]);
 
   const handleInput = useCallback((value: string) => {
-    if (status === 'finished') return;
+    if (status === 'finished' || status === 'passed' || status === 'failed') return;
     if (status === 'idle') {
       setStatus('playing');
     }
 
     setTypedText(value);
 
-    // Calculate current character stats
     const lastCharIndex = value.length - 1;
     const isCorrect = value[lastCharIndex] === targetText[lastCharIndex];
 
     if (value.length > typedText.length) {
       setTotalCharsTyped(prev => prev + 1);
       if (isCorrect) {
-        setCorrectChars(prev => prev + 1);
         setCombo(prev => {
           const newCombo = prev + 1;
           setMaxCombo(max => Math.max(max, newCombo));
@@ -77,30 +99,24 @@ export function useTypingGame(initialTime: number = 30, mode: GameMode = 'words'
       } else {
         setCombo(0);
       }
-    } else {
-      // User hit backspace - we don't reduce total typed but we should adjust combo/correct if needed.
-      // For simplicity, backspace just changes the text. Real WPM often counts net correct characters.
-      // We will re-evaluate correct chars based on the whole string matching.
     }
 
-    // Re-evaluate total correct chars by comparing string (more accurate for backspaces)
     let currentCorrect = 0;
     for (let i = 0; i < value.length; i++) {
       if (value[i] === targetText[i]) currentCorrect++;
     }
     setCorrectChars(currentCorrect);
 
-    // Add more text if we are close to the end
     if (value.length >= targetText.length - 10) {
-      const textMode = mode === 'quotes' ? 'quotes' : 'words';
-      setTargetText(prev => prev + ' ' + getRandomText(textMode, 20));
+      if (levelConfig) {
+        setTargetText(prev => prev + ' ' + generateLevelText(levelConfig, 20));
+      }
     }
 
-  }, [status, typedText, targetText, mode]);
+  }, [status, typedText, targetText, levelConfig]);
 
   const resetGame = useCallback(() => {
     setStatus('idle');
-    setTimeRemaining(initialTime);
     setTypedText('');
     setWpm(0);
     setAccuracy(100);
@@ -108,7 +124,7 @@ export function useTypingGame(initialTime: number = 30, mode: GameMode = 'words'
     setMaxCombo(0);
     setCorrectChars(0);
     setTotalCharsTyped(0);
-  }, [initialTime]);
+  }, []);
 
   return {
     status,
