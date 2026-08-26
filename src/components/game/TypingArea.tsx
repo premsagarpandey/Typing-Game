@@ -4,17 +4,24 @@ export default function TypingArea({ targetText, typedText, status, onInput }: a
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    inputRef.current?.focus();
-  }, []);
+    if (status === 'idle' || status === 'playing') {
+      // Small timeout ensures modal unmounts before focusing
+      setTimeout(() => inputRef.current?.focus(), 10);
+    }
+  }, [status]);
 
   return (
-    <div style={{ position: 'relative', background: 'white', padding: '20px', borderRadius: '5px', border: '1px solid #ccc', fontSize: '24px', fontFamily: 'monospace' }} onClick={() => inputRef.current?.focus()}>
+    <div style={{ position: 'relative', background: 'white', padding: '20px', borderRadius: '5px', border: '1px solid #ccc', fontSize: '24px', fontFamily: 'monospace', cursor: 'text' }} onClick={() => inputRef.current?.focus()}>
       <input
         ref={inputRef}
         type="text"
         value={typedText}
         onChange={(e) => onInput(e.target.value)}
-        disabled={status === 'finished'}
+        disabled={status !== 'idle' && status !== 'playing'}
+        autoComplete="off"
+        autoCorrect="off"
+        autoCapitalize="off"
+        spellCheck="false"
         style={{ position: 'absolute', opacity: 0, height: 0, width: 0 }}
       />
       <div>
