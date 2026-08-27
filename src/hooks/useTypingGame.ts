@@ -3,6 +3,40 @@ import { calculateWPM, calculateAccuracy } from '../utils/calculations';
 import { generateLevelText } from '../data/levels';
 import type { LevelConfig } from '../data/levels';
 
+let audioCtx: AudioContext | null = null;
+
+const playSound = (type: 'correct' | 'error') => {
+  if (!audioCtx) {
+    audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
+  }
+  if (audioCtx.state === 'suspended') {
+    audioCtx.resume();
+  }
+  const oscillator = audioCtx.createOscillator();
+  const gainNode = audioCtx.createGain();
+  
+  oscillator.connect(gainNode);
+  gainNode.connect(audioCtx.destination);
+  
+  if (type === 'correct') {
+    oscillator.type = 'sine';
+    oscillator.frequency.setValueAtTime(600, audioCtx.currentTime);
+    oscillator.frequency.exponentialRampToValueAtTime(800, audioCtx.currentTime + 0.05);
+    gainNode.gain.setValueAtTime(0.1, audioCtx.currentTime);
+    gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.05);
+    oscillator.start();
+    oscillator.stop(audioCtx.currentTime + 0.05);
+  } else {
+    oscillator.type = 'sawtooth';
+    oscillator.frequency.setValueAtTime(150, audioCtx.currentTime);
+    oscillator.frequency.exponentialRampToValueAtTime(100, audioCtx.currentTime + 0.1);
+    gainNode.gain.setValueAtTime(0.2, audioCtx.currentTime);
+    gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.1);
+    oscillator.start();
+    oscillator.stop(audioCtx.currentTime + 0.1);
+  }
+};
+
 export type GameStatus = 'idle' | 'playing' | 'finished' | 'passed' | 'failed';
 
 export function useTypingGame(initialTime: number = 30, levelConfig?: LevelConfig) {
@@ -11,6 +45,7 @@ export function useTypingGame(initialTime: number = 30, levelConfig?: LevelConfi
   const [timeRemaining, setTimeRemaining] = useState(actualInitialTime);
   const [targetText, setTargetText] = useState('');
   const [typedText, setTypedText] = useState('');
+  const [shakeTrigger, setShakeTrigger] = useState(0);
   
   // Stats
   const [wpm, setWpm] = useState(0);
@@ -91,12 +126,15 @@ export function useTypingGame(initialTime: number = 30, levelConfig?: LevelConfi
     if (value.length > typedText.length) {
       setTotalCharsTyped(prev => prev + 1);
       if (isCorrect) {
+        playSound('correct');
         setCombo(prev => {
           const newCombo = prev + 1;
           setMaxCombo(max => Math.max(max, newCombo));
           return newCombo;
         });
       } else {
+        playSound('error');
+        setShakeTrigger(prev => prev + 1);
         setCombo(0);
       }
     }
@@ -135,6 +173,7 @@ export function useTypingGame(initialTime: number = 30, levelConfig?: LevelConfi
     accuracy,
     combo,
     maxCombo,
+    shakeTrigger,
     handleInput,
     resetGame
   };

@@ -1,7 +1,19 @@
 import React, { useRef, useEffect } from 'react';
+import { motion, useAnimation } from 'framer-motion';
 
-export default function TypingArea({ targetText, typedText, status, onInput }: any) {
+export default function TypingArea({ targetText, typedText, status, shakeTrigger, onInput }: any) {
   const inputRef = useRef<HTMLInputElement>(null);
+  const controls = useAnimation();
+
+  useEffect(() => {
+    if (shakeTrigger > 0) {
+      controls.start({
+        x: [0, -8, 8, -6, 6, -4, 4, 0],
+        transition: { duration: 0.3 }
+      });
+    }
+  }, [shakeTrigger, controls]);
+
 
   useEffect(() => {
     if (status === 'idle' || status === 'playing') {
@@ -11,7 +23,11 @@ export default function TypingArea({ targetText, typedText, status, onInput }: a
   }, [status]);
 
   return (
-    <div style={{ position: 'relative', background: 'white', padding: '20px', borderRadius: '5px', border: '1px solid #ccc', fontSize: '24px', fontFamily: 'monospace', cursor: 'text' }} onClick={() => inputRef.current?.focus()}>
+    <motion.div 
+      animate={controls}
+      style={{ position: 'relative', background: 'white', padding: '20px', borderRadius: '5px', border: '1px solid #ccc', fontSize: '24px', fontFamily: 'monospace', cursor: 'text' }} 
+      onClick={() => inputRef.current?.focus()}
+    >
       <input
         ref={inputRef}
         type="text"
@@ -39,6 +55,6 @@ export default function TypingArea({ targetText, typedText, status, onInput }: a
           );
         })}
       </div>
-    </div>
+    </motion.div>
   );
 }

@@ -23,6 +23,7 @@ export default function Game() {
     accuracy,
     combo,
     maxCombo,
+    shakeTrigger,
     handleInput,
     resetGame
   } = useTypingGame(30, levelConfig);
@@ -57,6 +58,7 @@ export default function Game() {
           targetText={targetText}
           typedText={typedText}
           status={status}
+          shakeTrigger={shakeTrigger}
           onInput={handleInput}
         />
         
