@@ -1,31 +1,61 @@
-import React from 'react';
+import type { LevelConfig } from '../../data/levels';
+import type { GameStatus } from '../../hooks/useTypingGame';
 
-export default function ResultsModal({ wpm, accuracy, maxCombo, status, levelConfig, onNextLevel, onRetry }: any) {
+interface ResultsModalProps {
+  wpm: number;
+  accuracy: number;
+  maxCombo: number;
+  status: GameStatus;
+  levelConfig: LevelConfig;
+  onNextLevel: () => void;
+  onRetry: () => void;
+}
+
+export default function ResultsModal({
+  wpm,
+  accuracy,
+  maxCombo,
+  status,
+  levelConfig,
+  onNextLevel,
+  onRetry,
+}: ResultsModalProps) {
   const isPassed = status === 'passed';
-  
+
   return (
-    <div style={{ marginTop: '20px', padding: '20px', background: 'white', border: '2px solid black', borderRadius: '5px', textAlign: 'center' }}>
-      <h2 style={{ color: isPassed ? '#10b981' : '#ef4444' }}>
-        {isPassed ? 'LEVEL CLEARED!' : 'LEVEL FAILED'}
+    <div className="w-full max-w-md mx-auto p-6 bg-gray-900/90 backdrop-blur-xl border border-white/15 rounded-2xl text-center shadow-2xl animate-fade-in">
+      <h2 className={`text-2xl font-black uppercase tracking-wider mb-4 ${isPassed ? 'text-emerald-400' : 'text-rose-500'}`}>
+        {isPassed ? '🎉 Level Cleared!' : '❌ Level Failed'}
       </h2>
-      
-      <p>WPM: {wpm} / {levelConfig.targetWpm}</p>
-      <p>Accuracy: {accuracy}% / {levelConfig.targetAccuracy}%</p>
-      <p>Max Combo: {maxCombo}</p>
-      
+
+      <div className="space-y-3 mb-6 text-gray-300 text-sm">
+        <div className="flex justify-between border-b border-gray-800 pb-2">
+          <span>Speed:</span>
+          <span className="font-semibold text-gray-100">{wpm} WPM <span className="text-xs text-gray-500">(Target: {levelConfig.targetWpm})</span></span>
+        </div>
+        <div className="flex justify-between border-b border-gray-800 pb-2">
+          <span>Accuracy:</span>
+          <span className="font-semibold text-gray-100">{accuracy}% <span className="text-xs text-gray-500">(Target: {levelConfig.targetAccuracy}%)</span></span>
+        </div>
+        <div className="flex justify-between">
+          <span>Max Combo:</span>
+          <span className="font-semibold text-amber-400">{maxCombo}x</span>
+        </div>
+      </div>
+
       {isPassed ? (
-        <button 
+        <button
           onClick={onNextLevel}
-          style={{ padding: '10px 20px', background: '#3b82f6', color: 'white', border: 'none', borderRadius: '5px', cursor: 'pointer', marginTop: '10px' }}
+          className="w-full py-3 px-6 bg-emerald-600 hover:bg-emerald-500 active:scale-95 transition-all text-white font-semibold rounded-xl shadow-lg cursor-pointer"
         >
-          Next Level
+          Next Level →
         </button>
       ) : (
-        <button 
+        <button
           onClick={onRetry}
-          style={{ padding: '10px 20px', background: '#f59e0b', color: 'white', border: 'none', borderRadius: '5px', cursor: 'pointer', marginTop: '10px' }}
+          className="w-full py-3 px-6 bg-rose-600 hover:bg-rose-500 active:scale-95 transition-all text-white font-semibold rounded-xl shadow-lg cursor-pointer"
         >
-          Retry Level
+          Try Again ↺
         </button>
       )}
     </div>

@@ -6,12 +6,12 @@ import Stats from './pages/Stats';
 import Leaderboard from './pages/Leaderboard';
 import Settings from './pages/Settings';
 
-function App() {
+export default function App() {
   return (
     <Router>
-      <div>
+      <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans selection:bg-blue-500 selection:text-white">
         <Navbar />
-        <div style={{ padding: '20px', maxWidth: '800px', margin: '0 auto' }}>
+        <main className="flex-1 w-full max-w-5xl mx-auto px-4 sm:px-6 py-6">
           <Routes>
             <Route path="/" element={<Home />} />
             <Route path="/game" element={<Game />} />
@@ -19,10 +19,8 @@ function App() {
             <Route path="/leaderboard" element={<Leaderboard />} />
             <Route path="/settings" element={<Settings />} />
           </Routes>
-        </div>
+        </main>
       </div>
     </Router>
   );
 }
-
-export default App;

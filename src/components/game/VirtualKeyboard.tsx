@@ -1,48 +1,43 @@
-import React from 'react';
+interface VirtualKeyboardProps {
+  nextChar: string;
+}
 
 const ROWS = [
   ['q', 'w', 'e', 'r', 't', 'y', 'u', 'i', 'o', 'p'],
   ['a', 's', 'd', 'f', 'g', 'h', 'j', 'k', 'l'],
-  ['z', 'x', 'c', 'v', 'b', 'n', 'm']
+  ['z', 'x', 'c', 'v', 'b', 'n', 'm'],
 ];
 
-export default function VirtualKeyboard({ nextChar }: any) {
+export default function VirtualKeyboard({ nextChar }: VirtualKeyboardProps) {
   const targetKey = nextChar?.toLowerCase();
 
   return (
-    <div style={{ marginTop: '20px', display: 'flex', flexDirection: 'column', gap: '5px', alignItems: 'center' }}>
+    <div className="flex flex-col gap-1.5 items-center justify-center select-none py-2">
       {ROWS.map((row, i) => (
-        <div key={i} style={{ display: 'flex', gap: '5px' }}>
-          {row.map(key => (
-            <div
-              key={key}
-              style={{
-                width: '30px',
-                height: '30px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                border: '1px solid #ccc',
-                background: targetKey === key ? 'lightblue' : '#f9f9f9',
-                borderRadius: '3px'
-              }}
-            >
-              {key}
-            </div>
-          ))}
+        <div key={i} className="flex gap-1.5">
+          {row.map((key) => {
+            const isHighlighted = targetKey === key;
+            return (
+              <div
+                key={key}
+                className={`w-8 h-8 sm:w-9 sm:h-9 flex items-center justify-center text-xs sm:text-sm font-semibold uppercase rounded-lg border transition-colors ${
+                  isHighlighted
+                    ? 'bg-blue-500 text-white border-blue-400 shadow-md shadow-blue-500/30 scale-105'
+                    : 'bg-white/10 text-gray-300 border-white/10'
+                }`}
+              >
+                {key}
+              </div>
+            );
+          })}
         </div>
       ))}
       <div
-        style={{
-          width: '200px',
-          height: '30px',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          border: '1px solid #ccc',
-          background: targetKey === ' ' ? 'lightblue' : '#f9f9f9',
-          borderRadius: '3px'
-        }}
+        className={`w-48 sm:w-64 h-8 sm:h-9 flex items-center justify-center text-xs font-semibold uppercase rounded-lg border transition-colors ${
+          targetKey === ' '
+            ? 'bg-blue-500 text-white border-blue-400 shadow-md shadow-blue-500/30 scale-105'
+            : 'bg-white/10 text-gray-300 border-white/10'
+        }`}
       >
         Space
       </div>
