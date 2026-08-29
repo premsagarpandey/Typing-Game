@@ -5,15 +5,11 @@ import TypingArea from '../components/game/TypingArea';
 import ResultsModal from '../components/game/ResultsModal';
 import VirtualKeyboard from '../components/game/VirtualKeyboard';
 import { getLevelConfig } from '../data/levels';
+import { secureStorage } from '../utils/secureStorage';
 
 export default function Game() {
   const [currentLevel, setCurrentLevel] = useState<number>(() => {
-    try {
-      const saved = localStorage.getItem('typingGameLevel');
-      return saved ? parseInt(saved, 10) : 1;
-    } catch {
-      return 1;
-    }
+    return secureStorage.getItem<number>('typingGameLevel', 1);
   });
 
   const levelConfig = useMemo(() => getLevelConfig(currentLevel), [currentLevel]);
@@ -28,16 +24,13 @@ export default function Game() {
     combo,
     maxCombo,
     shakeTrigger,
+    securityFlag,
     handleInput,
     resetGame,
   } = useTypingGame(30, levelConfig);
 
   useEffect(() => {
-    try {
-      localStorage.setItem('typingGameLevel', currentLevel.toString());
-    } catch {
-      // Ignore storage errors
-    }
+    secureStorage.setItem('typingGameLevel', currentLevel);
   }, [currentLevel]);
 
   const handleNextLevel = () => {
@@ -67,6 +60,7 @@ export default function Game() {
           typedText={typedText}
           status={status}
           shakeTrigger={shakeTrigger}
+          securityFlag={securityFlag}
           onInput={handleInput}
         />
 
@@ -80,6 +74,7 @@ export default function Game() {
           maxCombo={maxCombo}
           status={status}
           levelConfig={levelConfig}
+          securityFlag={securityFlag}
           onNextLevel={handleNextLevel}
           onRetry={handleRetry}
         />
@@ -87,3 +82,4 @@ export default function Game() {
     </div>
   );
 }
+

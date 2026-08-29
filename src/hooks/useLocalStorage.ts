@@ -1,22 +1,15 @@
 import { useState, useEffect } from 'react';
+import { secureStorage } from '../utils/secureStorage';
 
 export function useLocalStorage<T>(key: string, initialValue: T) {
   const [storedValue, setStoredValue] = useState<T>(() => {
-    try {
-      const item = window.localStorage.getItem(key);
-      return item ? (JSON.parse(item) as T) : initialValue;
-    } catch {
-      return initialValue;
-    }
+    return secureStorage.getItem<T>(key, initialValue);
   });
 
   useEffect(() => {
-    try {
-      window.localStorage.setItem(key, JSON.stringify(storedValue));
-    } catch {
-      // Ignore write errors (e.g. private browsing storage limits)
-    }
+    secureStorage.setItem(key, storedValue);
   }, [key, storedValue]);
 
   return [storedValue, setStoredValue] as const;
 }
+
