@@ -96,9 +96,10 @@ export default function TypingArea({
             const isCorrect = isTyped && typedText[index] === char;
             const isError = isTyped && !isCorrect;
             const isCurrent = index === typedText.length;
+            const isSpace = char === ' ';
 
             return (
-              <span key={index} className="relative inline-flex justify-center">
+              <span key={index} className="relative inline-flex justify-center items-baseline px-[0.5px]">
                 {isCurrent && (
                   <motion.span
                     layoutId="caret"
@@ -118,15 +119,21 @@ export default function TypingArea({
                       ? (isDark ? '#f87171' : '#dc2626')
                       : isCorrect
                       ? (isDark ? '#4ade80' : '#16a34a')
+                      : isCurrent
+                      ? (isDark ? '#60a5fa' : '#2563eb')
                       : (isDark ? '#9ca3af' : '#94a3b8'),
                     scale: isTyped ? [1, 1.1, 1] : 1,
                   }}
                   transition={{ duration: 0.15 }}
-                  className={`transition-colors ${isError && char === ' ' ? 'bg-red-500/30' : ''} ${
-                    isError ? 'bg-red-500/20 rounded-sm' : ''
+                  className={`transition-colors ${
+                    isError ? 'bg-red-500/20 dark:bg-red-500/30 rounded-xs px-0.5' : ''
+                  } ${
+                    isSpace && !isTyped && !isCurrent ? 'opacity-40 font-semibold' : ''
+                  } ${
+                    isSpace && isCurrent ? 'font-bold scale-110' : ''
                   }`}
                 >
-                  {char === ' ' && isError ? '\u00A0' : char}
+                  {isSpace ? '_' : char}
                 </motion.span>
               </span>
             );
