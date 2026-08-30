@@ -20,10 +20,10 @@ export default function VirtualKeyboard({ nextChar }: VirtualKeyboardProps) {
             return (
               <div
                 key={key}
-                className={`w-8 h-8 sm:w-9 sm:h-9 flex items-center justify-center text-xs sm:text-sm font-semibold uppercase rounded-lg border transition-colors ${
+                className={`w-8 h-8 sm:w-9 sm:h-9 flex items-center justify-center text-xs sm:text-sm font-semibold uppercase rounded-lg border transition-all ${
                   isHighlighted
-                    ? 'bg-blue-500 text-white border-blue-400 shadow-md shadow-blue-500/30 scale-105'
-                    : 'bg-white/10 text-gray-300 border-white/10'
+                    ? 'bg-blue-600 text-white border-blue-500 shadow-md shadow-blue-500/30 scale-105'
+                    : 'bg-white dark:bg-white/10 text-slate-700 dark:text-gray-300 border-slate-200 dark:border-white/10 shadow-xs dark:shadow-none'
                 }`}
               >
                 {key}
@@ -33,10 +33,10 @@ export default function VirtualKeyboard({ nextChar }: VirtualKeyboardProps) {
         </div>
       ))}
       <div
-        className={`w-48 sm:w-64 h-8 sm:h-9 flex items-center justify-center text-xs font-semibold uppercase rounded-lg border transition-colors ${
+        className={`w-48 sm:w-64 h-8 sm:h-9 flex items-center justify-center text-xs font-semibold uppercase rounded-lg border transition-all ${
           targetKey === ' '
-            ? 'bg-blue-500 text-white border-blue-400 shadow-md shadow-blue-500/30 scale-105'
-            : 'bg-white/10 text-gray-300 border-white/10'
+            ? 'bg-blue-600 text-white border-blue-500 shadow-md shadow-blue-500/30 scale-105'
+            : 'bg-white dark:bg-white/10 text-slate-700 dark:text-gray-300 border-slate-200 dark:border-white/10 shadow-xs dark:shadow-none'
         }`}
       >
         Space

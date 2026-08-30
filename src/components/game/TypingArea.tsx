@@ -2,6 +2,7 @@ import { useRef, useEffect } from 'react';
 import { motion, useAnimation } from 'framer-motion';
 import type { GameStatus } from '../../hooks/useTypingGame';
 import { antiCheatEngine } from '../../utils/antiCheat';
+import { useTheme } from '../../context/ThemeContext';
 
 interface TypingAreaProps {
   targetText: string;
@@ -22,6 +23,8 @@ export default function TypingArea({
 }: TypingAreaProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const controls = useAnimation();
+  const { theme } = useTheme();
+  const isDark = theme === 'dark';
 
   useEffect(() => {
     if (shakeTrigger > 0) {
@@ -51,20 +54,22 @@ export default function TypingArea({
   return (
     <div className="relative w-full">
       {securityFlag && (
-        <div className="mb-3 px-4 py-2 bg-red-500/20 border border-red-500/40 rounded-xl text-red-300 text-xs font-semibold flex items-center justify-between animate-pulse">
+        <div className="mb-3 px-4 py-2 bg-red-500/10 dark:bg-red-500/20 border border-red-500/30 dark:border-red-500/40 rounded-xl text-red-600 dark:text-red-300 text-xs font-semibold flex items-center justify-between animate-pulse">
           <div className="flex items-center gap-2">
             <span>🛡️ Anti-Cheat Alert:</span>
             <span>{securityFlag}</span>
           </div>
-          <span className="text-[10px] bg-red-500/30 px-2 py-0.5 rounded">FLAGGED</span>
+          <span className="text-[10px] bg-red-500/20 dark:bg-red-500/30 px-2 py-0.5 rounded">FLAGGED</span>
         </div>
       )}
 
       <motion.div
         animate={controls}
-        className={`relative bg-white/10 backdrop-blur-lg p-6 sm:p-8 rounded-2xl border ${
-          securityFlag ? 'border-red-500/50' : 'border-white/20'
-        } text-2xl sm:text-3xl font-mono cursor-text shadow-2xl overflow-hidden min-h-[160px] select-none`}
+        className={`relative bg-white/80 dark:bg-white/10 backdrop-blur-lg p-6 sm:p-8 rounded-2xl border ${
+          securityFlag
+            ? 'border-red-500/50'
+            : 'border-slate-200 dark:border-white/20'
+        } text-2xl sm:text-3xl font-mono cursor-text shadow-xl dark:shadow-2xl overflow-hidden min-h-[160px] select-none transition-colors`}
         onClick={() => inputRef.current?.focus()}
       >
         <input
@@ -85,7 +90,7 @@ export default function TypingArea({
           className="absolute opacity-0 h-0 w-0 pointer-events-none"
         />
 
-        <div className="flex flex-wrap leading-relaxed tracking-wider select-none text-gray-400">
+        <div className="flex flex-wrap leading-relaxed tracking-wider select-none text-slate-400 dark:text-gray-400">
           {targetText.split('').map((char, index) => {
             const isTyped = index < typedText.length;
             const isCorrect = isTyped && typedText[index] === char;
@@ -97,7 +102,7 @@ export default function TypingArea({
                 {isCurrent && (
                   <motion.span
                     layoutId="caret"
-                    className="absolute left-0 bottom-0.5 w-full h-[3px] bg-blue-400 rounded-full"
+                    className="absolute left-0 bottom-0.5 w-full h-[3px] bg-blue-600 dark:bg-blue-400 rounded-full"
                     initial={{ opacity: 0 }}
                     animate={{ opacity: [1, 0.3, 1] }}
                     transition={{
@@ -109,7 +114,11 @@ export default function TypingArea({
                 <motion.span
                   initial={false}
                   animate={{
-                    color: isError ? '#f87171' : isCorrect ? '#4ade80' : '#9ca3af',
+                    color: isError
+                      ? (isDark ? '#f87171' : '#dc2626')
+                      : isCorrect
+                      ? (isDark ? '#4ade80' : '#16a34a')
+                      : (isDark ? '#9ca3af' : '#94a3b8'),
                     scale: isTyped ? [1, 1.1, 1] : 1,
                   }}
                   transition={{ duration: 0.15 }}
@@ -127,4 +136,3 @@ export default function TypingArea({
     </div>
   );
 }
-

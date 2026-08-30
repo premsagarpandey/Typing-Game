@@ -25,37 +25,41 @@ export default function ResultsModal({
   const isPassed = status === 'passed' && !securityFlag;
 
   return (
-    <div className="w-full max-w-md mx-auto p-6 bg-gray-900/90 backdrop-blur-xl border border-white/15 rounded-2xl text-center shadow-2xl animate-fade-in">
+    <div className="w-full max-w-md mx-auto p-6 bg-white/95 dark:bg-gray-900/90 backdrop-blur-xl border border-slate-200 dark:border-white/15 rounded-2xl text-center shadow-2xl animate-fade-in transition-colors">
       <h2
         className={`text-2xl font-black uppercase tracking-wider mb-4 ${
-          securityFlag ? 'text-amber-400' : isPassed ? 'text-emerald-400' : 'text-rose-500'
+          securityFlag
+            ? 'text-amber-500 dark:text-amber-400'
+            : isPassed
+            ? 'text-emerald-600 dark:text-emerald-400'
+            : 'text-rose-600 dark:text-rose-500'
         }`}
       >
         {securityFlag ? '🛡️ Verification Failed' : isPassed ? '🎉 Level Cleared!' : '❌ Level Failed'}
       </h2>
 
       {securityFlag && (
-        <div className="mb-4 p-3 bg-amber-500/10 border border-amber-500/30 rounded-xl text-amber-300 text-xs font-medium">
+        <div className="mb-4 p-3 bg-amber-500/10 border border-amber-500/30 rounded-xl text-amber-600 dark:text-amber-300 text-xs font-medium">
           <span className="font-bold">Anti-Cheat Alert:</span> {securityFlag}
         </div>
       )}
 
-      <div className="space-y-3 mb-6 text-gray-300 text-sm">
-        <div className="flex justify-between border-b border-gray-800 pb-2">
+      <div className="space-y-3 mb-6 text-slate-600 dark:text-gray-300 text-sm">
+        <div className="flex justify-between border-b border-slate-100 dark:border-gray-800 pb-2">
           <span>Speed:</span>
-          <span className="font-semibold text-gray-100">
-            {wpm} WPM <span className="text-xs text-gray-500">(Target: {levelConfig.targetWpm})</span>
+          <span className="font-semibold text-slate-900 dark:text-gray-100">
+            {wpm} WPM <span className="text-xs text-slate-400 dark:text-gray-500">(Target: {levelConfig.targetWpm})</span>
           </span>
         </div>
-        <div className="flex justify-between border-b border-gray-800 pb-2">
+        <div className="flex justify-between border-b border-slate-100 dark:border-gray-800 pb-2">
           <span>Accuracy:</span>
-          <span className="font-semibold text-gray-100">
-            {accuracy}% <span className="text-xs text-gray-500">(Target: {levelConfig.targetAccuracy}%)</span>
+          <span className="font-semibold text-slate-900 dark:text-gray-100">
+            {accuracy}% <span className="text-xs text-slate-400 dark:text-gray-500">(Target: {levelConfig.targetAccuracy}%)</span>
           </span>
         </div>
         <div className="flex justify-between">
           <span>Max Combo:</span>
-          <span className="font-semibold text-amber-400">{maxCombo}x</span>
+          <span className="font-semibold text-amber-600 dark:text-amber-400">{maxCombo}x</span>
         </div>
       </div>
 
@@ -77,4 +81,3 @@ export default function ResultsModal({
     </div>
   );
 }
-
