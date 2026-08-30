@@ -52,12 +52,12 @@ const playSound = (type: 'correct' | 'error') => {
 
 export type GameStatus = 'idle' | 'playing' | 'finished' | 'passed' | 'failed';
 
-export function useTypingGame(initialTime: number = 30, levelConfig?: LevelConfig) {
+export function useTypingGame(initialTime: number = 40, levelConfig?: LevelConfig) {
   const actualInitialTime = levelConfig ? levelConfig.timeLimit : initialTime;
 
   const [status, setStatus] = useState<GameStatus>('idle');
   const [timeRemaining, setTimeRemaining] = useState(actualInitialTime);
-  const [targetText, setTargetText] = useState(() => (levelConfig ? generateLevelText(levelConfig, 30) : ''));
+  const [targetText, setTargetText] = useState(() => (levelConfig ? generateLevelText(levelConfig, 25) : ''));
   const [typedText, setTypedText] = useState('');
   const [shakeTrigger, setShakeTrigger] = useState(0);
   const [securityFlag, setSecurityFlag] = useState<string | null>(null);
@@ -68,20 +68,21 @@ export function useTypingGame(initialTime: number = 30, levelConfig?: LevelConfi
   const [correctChars, setCorrectChars] = useState(0);
   const [totalCharsTyped, setTotalCharsTyped] = useState(0);
 
-  const [prevLevel, setPrevLevel] = useState(levelConfig?.level);
-  if (levelConfig && levelConfig.level !== prevLevel) {
-    setPrevLevel(levelConfig.level);
-    setTargetText(generateLevelText(levelConfig, 30));
-    setTimeRemaining(levelConfig.timeLimit);
-    setStatus('idle');
-    setTypedText('');
-    setCombo(0);
-    setMaxCombo(0);
-    setCorrectChars(0);
-    setTotalCharsTyped(0);
-    setSecurityFlag(null);
-    antiCheatEngine.reset();
-  }
+  // Reset when level changes
+  useEffect(() => {
+    if (levelConfig) {
+      antiCheatEngine.reset();
+      setStatus('idle');
+      setTimeRemaining(levelConfig.timeLimit);
+      setTargetText(generateLevelText(levelConfig, 25));
+      setTypedText('');
+      setCombo(0);
+      setMaxCombo(0);
+      setCorrectChars(0);
+      setTotalCharsTyped(0);
+      setSecurityFlag(null);
+    }
+  }, [levelConfig?.level]);
 
   const correctCharsRef = useRef(0);
   const totalCharsTypedRef = useRef(0);
@@ -92,7 +93,7 @@ export function useTypingGame(initialTime: number = 30, levelConfig?: LevelConfi
     totalCharsTypedRef.current = totalCharsTyped;
   }, [correctChars, totalCharsTyped]);
 
-  // Stable timer logic
+  // Timer logic
   useEffect(() => {
     if (status !== 'playing') return;
 
@@ -127,8 +128,8 @@ export function useTypingGame(initialTime: number = 30, levelConfig?: LevelConfi
     return () => clearInterval(interval);
   }, [status, levelConfig, actualInitialTime]);
 
-  // Derive WPM and Accuracy directly
-  const timeElapsed = actualInitialTime - timeRemaining;
+  // Derive WPM and Accuracy
+  const timeElapsed = Math.max(1, actualInitialTime - timeRemaining);
   const wpm = useMemo(() => calculateWPM(correctChars, timeElapsed), [correctChars, timeElapsed]);
   const accuracy = useMemo(
     () => calculateAccuracy(correctChars, totalCharsTyped),
@@ -138,7 +139,6 @@ export function useTypingGame(initialTime: number = 30, levelConfig?: LevelConfi
   const handleInput = useCallback((value: string) => {
     if (status === 'finished' || status === 'passed' || status === 'failed') return;
 
-    // Validate against clipboard paste or bulk text injection
     const isValidInput = antiCheatEngine.validateInput(typedText, value);
     if (!isValidInput) {
       playSound('error');
@@ -178,8 +178,9 @@ export function useTypingGame(initialTime: number = 30, levelConfig?: LevelConfi
     }
     setCorrectChars(currentCorrect);
 
-    if (value.length >= targetText.length - 10 && levelConfig) {
-      setTargetText((prev) => prev + ' ' + generateLevelText(levelConfig, 20));
+    // Auto-extend text seamlessly
+    if (value.length >= targetText.length - 8 && levelConfig) {
+      setTargetText((prev) => prev + ' ' + generateLevelText(levelConfig, 15));
     }
   }, [status, typedText, targetText, levelConfig]);
 
@@ -194,7 +195,7 @@ export function useTypingGame(initialTime: number = 30, levelConfig?: LevelConfi
     setTotalCharsTyped(0);
     setSecurityFlag(null);
     if (levelConfig) {
-      setTargetText(generateLevelText(levelConfig, 30));
+      setTargetText(generateLevelText(levelConfig, 25));
     }
   }, [actualInitialTime, levelConfig]);
 
@@ -213,4 +214,3 @@ export function useTypingGame(initialTime: number = 30, levelConfig?: LevelConfi
     resetGame,
   };
 }
-

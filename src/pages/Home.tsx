@@ -4,7 +4,7 @@ export default function Home() {
   const navigate = useNavigate();
 
   return (
-    <div className="flex flex-col items-center justify-center text-center max-w-xl mx-auto py-10">
+    <div className="flex flex-col items-center justify-center text-center max-w-2xl mx-auto py-8 sm:py-12">
       <div className="relative mb-6">
         <img
           src="/logo.png"
@@ -13,41 +13,43 @@ export default function Home() {
         />
         <span className="absolute -bottom-2 -right-2 px-2 py-0.5 bg-emerald-500/15 dark:bg-emerald-500/20 border border-emerald-500/30 dark:border-emerald-500/40 rounded-full text-[10px] font-semibold text-emerald-600 dark:text-emerald-400 flex items-center gap-1 backdrop-blur-md">
           <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 dark:bg-emerald-400 animate-pulse" />
-          Secured
+          Touch Typing Course
         </span>
       </div>
 
-      <h1 className="text-4xl font-extrabold tracking-tight text-slate-900 dark:text-white mb-3">
-        Welcome to Typlix
+      <h1 className="text-3xl sm:text-5xl font-extrabold tracking-tight text-slate-900 dark:text-white mb-3">
+        Master Touch Typing from Scratch
       </h1>
-      <p className="text-slate-600 dark:text-gray-400 text-lg mb-8">
-        Test and improve your typing speed, accuracy, and muscle memory with progressive levels and anti-cheat protected gameplay.
+      <p className="text-slate-600 dark:text-gray-400 text-base sm:text-lg mb-8 max-w-xl">
+        Designed for absolute beginners! Learn step-by-step with <strong>Home Row keys (F & J)</strong>, visual finger placement guides, gentle difficulty, and 50 progressive lessons.
       </p>
 
-      <button
-        onClick={() => navigate('/game')}
-        className="px-8 py-3.5 bg-blue-600 hover:bg-blue-500 active:scale-95 transition-all text-white text-lg font-semibold rounded-xl shadow-lg shadow-blue-500/25 cursor-pointer"
-      >
-        Start Game →
-      </button>
+      <div className="flex flex-wrap items-center justify-center gap-3 mb-10">
+        <button
+          onClick={() => navigate('/game')}
+          className="px-8 py-3.5 bg-blue-600 hover:bg-blue-500 active:scale-95 transition-all text-white text-base sm:text-lg font-semibold rounded-xl shadow-lg shadow-blue-500/25 cursor-pointer"
+        >
+          Start Lesson 1 (Home Row) →
+        </button>
+      </div>
 
-      <div className="w-full mt-12 grid grid-cols-1 sm:grid-cols-3 gap-4 text-left">
+      <div className="w-full grid grid-cols-1 sm:grid-cols-3 gap-4 text-left">
         <div className="p-4 rounded-xl bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 shadow-sm dark:shadow-none transition-colors">
-          <div className="text-xl mb-1">⚡</div>
-          <h3 className="font-semibold text-slate-900 dark:text-white text-sm">Speed (WPM)</h3>
-          <p className="text-slate-600 dark:text-gray-400 text-xs mt-1">Real-time Words Per Minute calculation as you type.</p>
+          <div className="text-2xl mb-1.5">🖐️</div>
+          <h3 className="font-semibold text-slate-900 dark:text-white text-sm">Finger Placement Guides</h3>
+          <p className="text-slate-600 dark:text-gray-400 text-xs mt-1">Real-time hints show exactly which hand and finger to use for every single key.</p>
         </div>
 
         <div className="p-4 rounded-xl bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 shadow-sm dark:shadow-none transition-colors">
-          <div className="text-xl mb-1">🎯</div>
-          <h3 className="font-semibold text-slate-900 dark:text-white text-sm">Accuracy</h3>
-          <p className="text-slate-600 dark:text-gray-400 text-xs mt-1">Track precision and minimize typos with instant visual feedback.</p>
+          <div className="text-2xl mb-1.5">🌱</div>
+          <h3 className="font-semibold text-slate-900 dark:text-white text-sm">Gentle Progression</h3>
+          <p className="text-slate-600 dark:text-gray-400 text-xs mt-1">Starts at just 5 WPM with 2 keys, gradually unlocking rows as your muscle memory builds.</p>
         </div>
 
         <div className="p-4 rounded-xl bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 shadow-sm dark:shadow-none transition-colors">
-          <div className="text-xl mb-1">🛡️</div>
-          <h3 className="font-semibold text-slate-900 dark:text-white text-sm">Fair Play Shield</h3>
-          <p className="text-slate-600 dark:text-gray-400 text-xs mt-1">Anti-cheat keystroke verification & tamper-proof cryptographic scores.</p>
+          <div className="text-2xl mb-1.5">🎯</div>
+          <h3 className="font-semibold text-slate-900 dark:text-white text-sm">50 Guided Lessons</h3>
+          <p className="text-slate-600 dark:text-gray-400 text-xs mt-1">From Home Row basics to full words, sentences, punctuation, and speed mastery.</p>
         </div>
       </div>
     </div>
