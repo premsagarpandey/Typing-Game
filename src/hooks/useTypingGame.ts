@@ -178,11 +178,31 @@ export function useTypingGame(initialTime: number = 40, levelConfig?: LevelConfi
     }
     setCorrectChars(currentCorrect);
 
-    // Auto-extend text seamlessly
-    if (value.length >= targetText.length - 8 && levelConfig) {
-      setTargetText((prev) => prev + ' ' + generateLevelText(levelConfig, 15));
+    // If all target text is completed, finish level immediately
+    if (value.length >= targetText.length && targetText.length > 0) {
+      const timeSpent = Math.max(1, actualInitialTime - timeRemaining);
+      const totalTyped = totalCharsTyped + 1;
+      const finalWpm = calculateWPM(currentCorrect, timeSpent);
+      const finalAcc = calculateAccuracy(currentCorrect, totalTyped);
+      const isScoreValid = antiCheatEngine.validateSessionScore(finalWpm, finalAcc, timeSpent);
+
+      if (!isScoreValid || antiCheatEngine.getState().isFlagged) {
+        setSecurityFlag(antiCheatEngine.getState().reason || 'Anti-cheat policy violation');
+        setStatus('failed');
+        return;
+      }
+
+      if (levelConfig) {
+        if (finalWpm >= levelConfig.targetWpm && finalAcc >= levelConfig.targetAccuracy) {
+          setStatus('passed');
+        } else {
+          setStatus('failed');
+        }
+      } else {
+        setStatus('finished');
+      }
     }
-  }, [status, typedText, targetText, levelConfig]);
+  }, [status, typedText, targetText, levelConfig, actualInitialTime, timeRemaining, totalCharsTyped]);
 
   const resetGame = useCallback(() => {
     antiCheatEngine.reset();

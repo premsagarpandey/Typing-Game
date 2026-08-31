@@ -76,24 +76,37 @@ export default function ResultsModal({
         </div>
       </div>
 
-      <div className="flex flex-col sm:flex-row gap-2">
+      <div className="flex flex-col sm:flex-row gap-2.5">
         <button
           onClick={onRetry}
-          className="flex-1 py-3 px-4 bg-slate-100 hover:bg-slate-200 dark:bg-white/10 dark:hover:bg-white/15 active:scale-95 transition-all text-slate-800 dark:text-white font-semibold rounded-xl text-sm border border-slate-300 dark:border-white/10 cursor-pointer"
+          className="flex-1 py-3 px-4 bg-slate-100 hover:bg-slate-200 dark:bg-white/10 dark:hover:bg-white/15 active:scale-95 transition-all text-slate-800 dark:text-white font-semibold rounded-xl text-sm border border-slate-300 dark:border-white/10 cursor-pointer flex items-center justify-center gap-2"
         >
-          Practice Again ↺
+          <span>Practice Again ↺</span>
+          <kbd className="px-1.5 py-0.5 text-[11px] font-mono bg-slate-200 dark:bg-white/15 text-slate-600 dark:text-gray-300 rounded border border-slate-300 dark:border-white/10">
+            R
+          </kbd>
         </button>
 
         <button
           onClick={onNextLevel}
-          className={`flex-1 py-3 px-4 active:scale-95 transition-all text-white font-semibold rounded-xl text-sm shadow-md cursor-pointer ${
+          className={`flex-1 py-3 px-4 active:scale-95 transition-all text-white font-semibold rounded-xl text-sm shadow-md cursor-pointer flex items-center justify-center gap-2 ${
             isPassed
-              ? 'bg-emerald-600 hover:bg-emerald-500 shadow-emerald-500/25'
-              : 'bg-blue-600 hover:bg-blue-500 shadow-blue-500/25'
+              ? 'bg-emerald-600 hover:bg-emerald-500 shadow-emerald-500/25 ring-2 ring-emerald-400/40'
+              : 'bg-blue-600 hover:bg-blue-500 shadow-blue-500/25 ring-2 ring-blue-400/40'
           }`}
         >
-          {isPassed ? 'Next Level →' : 'Continue Anyway →'}
+          <span>{isPassed ? 'Next Level →' : 'Continue Anyway →'}</span>
+          <kbd className="px-2 py-0.5 text-[11px] font-mono bg-white/25 text-white rounded border border-white/30 shadow-xs">
+            ↵ Enter
+          </kbd>
         </button>
+      </div>
+
+      <div className="mt-3.5 pt-3 border-t border-slate-200/80 dark:border-white/10 flex items-center justify-center gap-1.5 text-[11px] text-slate-500 dark:text-gray-400">
+        <span>⚡</span>
+        <span>
+          Press <kbd className="px-1.5 py-0.5 font-mono text-slate-700 dark:text-slate-200 bg-slate-200/80 dark:bg-white/15 rounded text-[10px] font-bold">Enter ↵</kbd> on your keyboard to instantly play next level
+        </span>
       </div>
     </div>
   );

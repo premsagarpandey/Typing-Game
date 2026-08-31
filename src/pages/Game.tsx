@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useTypingGame } from '../hooks/useTypingGame';
 import GameStats from '../components/game/GameStats';
 import TypingArea from '../components/game/TypingArea';
@@ -33,24 +33,48 @@ export default function Game() {
     secureStorage.setItem('typingGameLevel', currentLevel);
   }, [currentLevel]);
 
-  const handleNextLevel = () => {
+  const handleNextLevel = useCallback(() => {
     setCurrentLevel((prev) => Math.min(prev + 1, 50));
     resetGame();
-  };
+  }, [resetGame]);
 
-  const handlePrevLevel = () => {
+  const handlePrevLevel = useCallback(() => {
     setCurrentLevel((prev) => Math.max(prev - 1, 1));
     resetGame();
-  };
+  }, [resetGame]);
 
-  const handleSelectLevel = (lvl: number) => {
+  const handleSelectLevel = useCallback((lvl: number) => {
     setCurrentLevel(lvl);
     resetGame();
-  };
+  }, [resetGame]);
 
-  const handleRetry = () => {
+  const handleRetry = useCallback(() => {
     resetGame();
-  };
+  }, [resetGame]);
+
+  // Handle Enter key and R key when level finishes (passed/failed)
+  useEffect(() => {
+    if (status !== 'passed' && status !== 'failed' && status !== 'finished') {
+      return;
+    }
+
+    const handleGlobalKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        e.stopPropagation();
+        handleNextLevel();
+      } else if (e.key === 'r' || e.key === 'R') {
+        e.preventDefault();
+        e.stopPropagation();
+        handleRetry();
+      }
+    };
+
+    window.addEventListener('keydown', handleGlobalKeyDown, true);
+    return () => {
+      window.removeEventListener('keydown', handleGlobalKeyDown, true);
+    };
+  }, [status, handleNextLevel, handleRetry]);
 
   return (
     <div className="flex flex-col items-center justify-center min-h-[75vh] w-full max-w-3xl mx-auto gap-5 py-2">

@@ -37,10 +37,10 @@ export default function TypingArea({
 
   useEffect(() => {
     if (status === 'idle' || status === 'playing') {
-      const timer = setTimeout(() => inputRef.current?.focus(), 10);
+      const timer = setTimeout(() => inputRef.current?.focus(), 15);
       return () => clearTimeout(timer);
     }
-  }, [status]);
+  }, [status, targetText]);
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     antiCheatEngine.handleKeyEvent(e);
