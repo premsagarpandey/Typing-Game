@@ -5,16 +5,12 @@ export default function Home() {
 
   return (
     <div className="flex flex-col items-center justify-center text-center max-w-2xl mx-auto py-8 sm:py-12">
-      <div className="relative mb-6">
+      <div className="mb-6">
         <img
           src="/logo.png"
           alt="Typlix Logo"
           className="w-28 h-auto drop-shadow-xl"
         />
-        <span className="absolute -bottom-2 -right-2 px-2 py-0.5 bg-emerald-500/15 dark:bg-emerald-500/20 border border-emerald-500/30 dark:border-emerald-500/40 rounded-full text-[10px] font-semibold text-emerald-600 dark:text-emerald-400 flex items-center gap-1 backdrop-blur-md">
-          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 dark:bg-emerald-400 animate-pulse" />
-          Touch Typing Course
-        </span>
       </div>
 
       <h1 className="text-3xl sm:text-5xl font-extrabold tracking-tight text-slate-900 dark:text-white mb-3">
