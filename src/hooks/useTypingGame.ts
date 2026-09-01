@@ -3,23 +3,26 @@ import { calculateWPM, calculateAccuracy } from '../utils/calculations';
 import { generateLevelText } from '../data/levels';
 import type { LevelConfig } from '../data/levels';
 import { antiCheatEngine } from '../utils/antiCheat';
-import { secureStorage } from '../utils/secureStorage';
+import { secureStorage, type TypingSessionRecord } from '../utils/secureStorage';
 
 let audioCtx: AudioContext | null = null;
 
 const playSound = (type: 'correct' | 'error') => {
   if (typeof window !== 'undefined') {
+    // Fast O(1) in-memory lookup via secureStorage
     const soundSetting = secureStorage.getItem('sound', true);
     if (!soundSetting) return;
   }
 
   try {
     if (!audioCtx) {
-      const AudioContextClass = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+      const AudioContextClass =
+        window.AudioContext ||
+        (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
       audioCtx = new AudioContextClass();
     }
     if (audioCtx.state === 'suspended') {
-      audioCtx.resume();
+      audioCtx.resume().catch(() => {});
     }
     const oscillator = audioCtx.createOscillator();
     const gainNode = audioCtx.createGain();
@@ -28,25 +31,26 @@ const playSound = (type: 'correct' | 'error') => {
     oscillator.connect(gainNode);
     gainNode.connect(audioCtx.destination);
 
+    const now = audioCtx.currentTime;
     if (type === 'correct') {
       oscillator.type = 'sine';
-      oscillator.frequency.setValueAtTime(800, audioCtx.currentTime);
-      oscillator.frequency.exponentialRampToValueAtTime(300, audioCtx.currentTime + 0.03);
-      gainNode.gain.setValueAtTime(0.2, audioCtx.currentTime);
-      gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.03);
-      oscillator.start();
-      oscillator.stop(audioCtx.currentTime + 0.03);
+      oscillator.frequency.setValueAtTime(800, now);
+      oscillator.frequency.exponentialRampToValueAtTime(300, now + 0.03);
+      gainNode.gain.setValueAtTime(0.2, now);
+      gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.03);
+      oscillator.start(now);
+      oscillator.stop(now + 0.03);
     } else {
       oscillator.type = 'triangle';
-      oscillator.frequency.setValueAtTime(200, audioCtx.currentTime);
-      oscillator.frequency.exponentialRampToValueAtTime(100, audioCtx.currentTime + 0.1);
-      gainNode.gain.setValueAtTime(0.3, audioCtx.currentTime);
-      gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.1);
-      oscillator.start();
-      oscillator.stop(audioCtx.currentTime + 0.1);
+      oscillator.frequency.setValueAtTime(200, now);
+      oscillator.frequency.exponentialRampToValueAtTime(100, now + 0.1);
+      gainNode.gain.setValueAtTime(0.3, now);
+      gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
+      oscillator.start(now);
+      oscillator.stop(now + 0.1);
     }
   } catch {
-    // AudioContext unavailable
+    // AudioContext unavailable or blocked
   }
 };
 
@@ -68,57 +72,82 @@ export function useTypingGame(initialTime: number = 40, levelConfig?: LevelConfi
   const [correctChars, setCorrectChars] = useState(0);
   const [totalCharsTyped, setTotalCharsTyped] = useState(0);
 
-  // Reset when level changes
-  useEffect(() => {
-    if (levelConfig) {
-      antiCheatEngine.reset();
-      setStatus('idle');
-      setTimeRemaining(levelConfig.timeLimit);
-      setTargetText(generateLevelText(levelConfig, 25));
-      setTypedText('');
-      setCombo(0);
-      setMaxCombo(0);
-      setCorrectChars(0);
-      setTotalCharsTyped(0);
-      setSecurityFlag(null);
-    }
-  }, [levelConfig?.level]);
-
   const correctCharsRef = useRef(0);
   const totalCharsTypedRef = useRef(0);
+  const maxComboRef = useRef(0);
+  const levelConfigRef = useRef(levelConfig);
 
-  // Sync refs with latest counts
+  // Keep refs in sync for reliable timer reads
   useEffect(() => {
     correctCharsRef.current = correctChars;
     totalCharsTypedRef.current = totalCharsTyped;
-  }, [correctChars, totalCharsTyped]);
+    maxComboRef.current = maxCombo;
+    levelConfigRef.current = levelConfig;
+  }, [correctChars, totalCharsTyped, maxCombo, levelConfig]);
 
-  // Timer logic
+  // Unified session completion logic
+  const completeSession = useCallback(
+    (spentSeconds: number, correctCount: number, totalTypedCount: number) => {
+      const currentConfig = levelConfigRef.current;
+      const finalWpm = calculateWPM(correctCount, spentSeconds);
+      const finalAcc = calculateAccuracy(correctCount, totalTypedCount);
+      const isScoreValid = antiCheatEngine.validateSessionScore(finalWpm, finalAcc, spentSeconds);
+
+      let newStatus: GameStatus = 'finished';
+      let flagReason: string | null = null;
+
+      if (!isScoreValid || antiCheatEngine.getState().isFlagged) {
+        flagReason = antiCheatEngine.getState().reason || 'Anti-cheat policy violation';
+        newStatus = 'failed';
+      } else if (currentConfig) {
+        if (finalWpm >= currentConfig.targetWpm && finalAcc >= currentConfig.targetAccuracy) {
+          newStatus = 'passed';
+        } else {
+          newStatus = 'failed';
+        }
+      }
+
+      setSecurityFlag(flagReason);
+      setStatus(newStatus);
+
+      // Record session in secure storage for real stats tracking
+      if (!flagReason && totalTypedCount > 0) {
+        try {
+          const existing = secureStorage.getItem<TypingSessionRecord[]>('typlix_stats', []);
+          const record: TypingSessionRecord = {
+            id: `${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+            level: currentConfig ? currentConfig.level : 1,
+            wpm: finalWpm,
+            accuracy: finalAcc,
+            maxCombo: maxComboRef.current,
+            date: new Date().toLocaleDateString('en-US', {
+              month: 'short',
+              day: 'numeric',
+              hour: '2-digit',
+              minute: '2-digit',
+            }),
+            passed: newStatus === 'passed' || newStatus === 'finished',
+          };
+          secureStorage.setItem('typlix_stats', [...existing, record].slice(-50));
+        } catch {
+          // ignore
+        }
+      }
+    },
+    []
+  );
+
+  // Timer: Decrements timeRemaining and finishes game when time runs out
   useEffect(() => {
     if (status !== 'playing') return;
 
     const interval = setInterval(() => {
       setTimeRemaining((prev) => {
         if (prev <= 1) {
-          const finalWpm = calculateWPM(correctCharsRef.current, actualInitialTime);
-          const finalAcc = calculateAccuracy(correctCharsRef.current, totalCharsTypedRef.current);
-          const isScoreValid = antiCheatEngine.validateSessionScore(finalWpm, finalAcc, actualInitialTime);
-
-          if (!isScoreValid || antiCheatEngine.getState().isFlagged) {
-            setSecurityFlag(antiCheatEngine.getState().reason || 'Anti-cheat policy violation');
-            setStatus('failed');
-            return 0;
-          }
-
-          if (levelConfig) {
-            if (finalWpm >= levelConfig.targetWpm && finalAcc >= levelConfig.targetAccuracy) {
-              setStatus('passed');
-            } else {
-              setStatus('failed');
-            }
-          } else {
-            setStatus('finished');
-          }
+          clearInterval(interval);
+          setTimeout(() => {
+            completeSession(actualInitialTime, correctCharsRef.current, totalCharsTypedRef.current);
+          }, 0);
           return 0;
         }
         return prev - 1;
@@ -126,9 +155,9 @@ export function useTypingGame(initialTime: number = 40, levelConfig?: LevelConfi
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [status, levelConfig, actualInitialTime]);
+  }, [status, actualInitialTime, completeSession]);
 
-  // Derive WPM and Accuracy
+  // Derived WPM and Accuracy
   const timeElapsed = Math.max(1, actualInitialTime - timeRemaining);
   const wpm = useMemo(() => calculateWPM(correctChars, timeElapsed), [correctChars, timeElapsed]);
   const accuracy = useMemo(
@@ -136,88 +165,78 @@ export function useTypingGame(initialTime: number = 40, levelConfig?: LevelConfi
     [correctChars, totalCharsTyped]
   );
 
-  const handleInput = useCallback((value: string) => {
-    if (status === 'finished' || status === 'passed' || status === 'failed') return;
+  const handleInput = useCallback(
+    (value: string) => {
+      if (status === 'finished' || status === 'passed' || status === 'failed') return;
 
-    const isValidInput = antiCheatEngine.validateInput(typedText, value);
-    if (!isValidInput) {
-      playSound('error');
-      setShakeTrigger((prev) => prev + 1);
-      setSecurityFlag(antiCheatEngine.getState().reason);
-      return;
-    }
-
-    if (status === 'idle') {
-      setStatus('playing');
-    }
-
-    setTypedText(value);
-
-    const lastCharIndex = value.length - 1;
-    const isCorrect = value[lastCharIndex] === targetText[lastCharIndex];
-
-    if (value.length > typedText.length) {
-      setTotalCharsTyped((prev) => prev + 1);
-      if (isCorrect) {
-        playSound('correct');
-        setCombo((prev) => {
-          const newCombo = prev + 1;
-          setMaxCombo((max) => Math.max(max, newCombo));
-          return newCombo;
-        });
-      } else {
+      const isValidInput = antiCheatEngine.validateInput(typedText, value);
+      if (!isValidInput) {
         playSound('error');
         setShakeTrigger((prev) => prev + 1);
-        setCombo(0);
-      }
-    }
-
-    let currentCorrect = 0;
-    for (let i = 0; i < value.length; i++) {
-      if (value[i] === targetText[i]) currentCorrect++;
-    }
-    setCorrectChars(currentCorrect);
-
-    // If all target text is completed, finish level immediately
-    if (value.length >= targetText.length && targetText.length > 0) {
-      const timeSpent = Math.max(1, actualInitialTime - timeRemaining);
-      const totalTyped = totalCharsTyped + 1;
-      const finalWpm = calculateWPM(currentCorrect, timeSpent);
-      const finalAcc = calculateAccuracy(currentCorrect, totalTyped);
-      const isScoreValid = antiCheatEngine.validateSessionScore(finalWpm, finalAcc, timeSpent);
-
-      if (!isScoreValid || antiCheatEngine.getState().isFlagged) {
-        setSecurityFlag(antiCheatEngine.getState().reason || 'Anti-cheat policy violation');
-        setStatus('failed');
+        setSecurityFlag(antiCheatEngine.getState().reason);
         return;
       }
 
-      if (levelConfig) {
-        if (finalWpm >= levelConfig.targetWpm && finalAcc >= levelConfig.targetAccuracy) {
-          setStatus('passed');
-        } else {
-          setStatus('failed');
-        }
-      } else {
-        setStatus('finished');
+      if (status === 'idle') {
+        setStatus('playing');
       }
-    }
-  }, [status, typedText, targetText, levelConfig, actualInitialTime, timeRemaining, totalCharsTyped]);
 
-  const resetGame = useCallback(() => {
-    antiCheatEngine.reset();
-    setStatus('idle');
-    setTimeRemaining(actualInitialTime);
-    setTypedText('');
-    setCombo(0);
-    setMaxCombo(0);
-    setCorrectChars(0);
-    setTotalCharsTyped(0);
-    setSecurityFlag(null);
-    if (levelConfig) {
-      setTargetText(generateLevelText(levelConfig, 25));
-    }
-  }, [actualInitialTime, levelConfig]);
+      setTypedText(value);
+
+      const lastCharIndex = value.length - 1;
+      const isCorrect = value[lastCharIndex] === targetText[lastCharIndex];
+      let newTotalTyped = totalCharsTyped;
+
+      if (value.length > typedText.length) {
+        newTotalTyped = totalCharsTyped + 1;
+        setTotalCharsTyped(newTotalTyped);
+        if (isCorrect) {
+          playSound('correct');
+          setCombo((prev) => {
+            const newCombo = prev + 1;
+            setMaxCombo((max) => Math.max(max, newCombo));
+            return newCombo;
+          });
+        } else {
+          playSound('error');
+          setShakeTrigger((prev) => prev + 1);
+          setCombo(0);
+        }
+      }
+
+      let currentCorrect = 0;
+      for (let i = 0; i < value.length; i++) {
+        if (value[i] === targetText[i]) currentCorrect++;
+      }
+      setCorrectChars(currentCorrect);
+
+      // If all target text is completed, finish level immediately
+      if (value.length >= targetText.length && targetText.length > 0) {
+        const timeSpent = Math.max(1, actualInitialTime - timeRemaining);
+        completeSession(timeSpent, currentCorrect, newTotalTyped);
+      }
+    },
+    [status, typedText, targetText, actualInitialTime, timeRemaining, totalCharsTyped, completeSession]
+  );
+
+  const resetGame = useCallback(
+    (newConfig?: LevelConfig) => {
+      const config = newConfig || levelConfigRef.current;
+      antiCheatEngine.reset();
+      setStatus('idle');
+      setTimeRemaining(config ? config.timeLimit : actualInitialTime);
+      setTypedText('');
+      setCombo(0);
+      setMaxCombo(0);
+      setCorrectChars(0);
+      setTotalCharsTyped(0);
+      setSecurityFlag(null);
+      if (config) {
+        setTargetText(generateLevelText(config, 25));
+      }
+    },
+    [actualInitialTime]
+  );
 
   return {
     status,

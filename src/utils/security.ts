@@ -4,20 +4,6 @@
  */
 
 /**
- * Sanitizes strings to prevent XSS and HTML injection
- */
-export function sanitizeInput(input: string): string {
-  if (typeof input !== 'string') return '';
-  return input
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#x27;')
-    .replace(/\//g, '&#x2F;');
-}
-
-/**
  * Deep freezes an object to make it completely immutable against prototype tampering
  */
 export function deepFreeze<T extends object>(obj: T): Readonly<T> {
@@ -37,13 +23,14 @@ export function deepFreeze<T extends object>(obj: T): Readonly<T> {
 export function initDevToolsSecurityWarning(): void {
   if (typeof window === 'undefined') return;
 
-  // Frame-busting clickjack defense
+  // Frameguard clickjack defense fallback (CSP frame-ancestors is primary)
   try {
-    if (window.top && window.top !== window.self) {
-      window.top.location.href = window.self.location.href;
+    if (window.self !== window.top && window.top) {
+      // Safe check without leaking cross-origin exceptions
+      window.top.location.replace(window.self.location.href);
     }
   } catch {
-    // Cross-origin frame attempt blocked by browser
+    // Cross-origin iframe environment handled by CSP
   }
 
   // Console Security Warning

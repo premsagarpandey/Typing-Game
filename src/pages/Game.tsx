@@ -1,16 +1,24 @@
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useEffect, useMemo, useCallback } from 'react';
 import { useTypingGame } from '../hooks/useTypingGame';
 import GameStats from '../components/game/GameStats';
 import TypingArea from '../components/game/TypingArea';
 import ResultsModal from '../components/game/ResultsModal';
 import VirtualKeyboard from '../components/game/VirtualKeyboard';
 import { getLevelConfig } from '../data/levels';
-import { secureStorage } from '../utils/secureStorage';
+import { useLocalStorage } from '../hooks/useLocalStorage';
+
+const LEVEL_OPTIONS = Array.from({ length: 50 }, (_, i) => {
+  const lvl = i + 1;
+  const conf = getLevelConfig(lvl);
+  return {
+    level: lvl,
+    title: conf.title,
+    category: conf.category,
+  };
+});
 
 export default function Game() {
-  const [currentLevel, setCurrentLevel] = useState<number>(() => {
-    return secureStorage.getItem<number>('typingGameLevel', 1);
-  });
+  const [currentLevel, setCurrentLevel] = useLocalStorage<number>('typingGameLevel', 1);
 
   const levelConfig = useMemo(() => getLevelConfig(currentLevel), [currentLevel]);
 
@@ -29,24 +37,19 @@ export default function Game() {
     resetGame,
   } = useTypingGame(40, levelConfig);
 
-  useEffect(() => {
-    secureStorage.setItem('typingGameLevel', currentLevel);
-  }, [currentLevel]);
+  const handleSelectLevel = useCallback((lvl: number) => {
+    const next = Math.min(Math.max(1, lvl), 50);
+    setCurrentLevel(next);
+    resetGame(getLevelConfig(next));
+  }, [setCurrentLevel, resetGame]);
 
   const handleNextLevel = useCallback(() => {
-    setCurrentLevel((prev) => Math.min(prev + 1, 50));
-    resetGame();
-  }, [resetGame]);
+    handleSelectLevel(currentLevel + 1);
+  }, [currentLevel, handleSelectLevel]);
 
   const handlePrevLevel = useCallback(() => {
-    setCurrentLevel((prev) => Math.max(prev - 1, 1));
-    resetGame();
-  }, [resetGame]);
-
-  const handleSelectLevel = useCallback((lvl: number) => {
-    setCurrentLevel(lvl);
-    resetGame();
-  }, [resetGame]);
+    handleSelectLevel(currentLevel - 1);
+  }, [currentLevel, handleSelectLevel]);
 
   const handleRetry = useCallback(() => {
     resetGame();
@@ -107,14 +110,11 @@ export default function Game() {
               onChange={(e) => handleSelectLevel(Number(e.target.value))}
               className="px-2.5 py-1 text-xs font-semibold rounded-lg border border-slate-200 dark:border-white/10 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 cursor-pointer focus:outline-none focus:ring-1 focus:ring-blue-500"
             >
-              {Array.from({ length: 50 }, (_, i) => i + 1).map((lvl) => {
-                const conf = getLevelConfig(lvl);
-                return (
-                  <option key={lvl} value={lvl}>
-                    Lvl {lvl}: {conf.title} ({conf.category})
-                  </option>
-                );
-              })}
+              {LEVEL_OPTIONS.map((item) => (
+                <option key={item.level} value={item.level} className="bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100">
+                  Lvl {item.level}: {item.title} ({item.category})
+                </option>
+              ))}
             </select>
 
             <button
@@ -127,7 +127,7 @@ export default function Game() {
             </button>
 
             <button
-              onClick={resetGame}
+              onClick={handleRetry}
               className="px-2.5 py-1 text-xs font-semibold rounded-lg border border-blue-500/30 bg-blue-500/10 hover:bg-blue-500/20 text-blue-600 dark:text-blue-400 cursor-pointer transition-colors"
               title="Restart Level"
             >

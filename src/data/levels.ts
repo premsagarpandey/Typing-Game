@@ -615,22 +615,21 @@ export function generateLevelText(levelConfig: LevelConfig, wordCount: number = 
   const { wordBank } = levelConfig;
   if (!wordBank || wordBank.length === 0) return 'f j f j';
 
-  // If wordBank contains full sentences (items with multiple words), join them directly or pick
-  const isSentenceBank = wordBank.some((item) => item.includes(' '));
+  // True sentences contain multiple full words (length > 25 or >= 4 words)
+  const isSentenceBank = wordBank.some((item) => item.length > 25 || item.split(' ').length >= 4);
   if (isSentenceBank) {
-    // Pick sentences
     const sentences: string[] = [];
-    const count = Math.min(Math.max(2, Math.floor(wordCount / 6)), 5);
+    const count = Math.min(Math.max(1, Math.floor(wordCount / 8)), 3);
     for (let i = 0; i < count; i++) {
       sentences.push(wordBank[Math.floor(Math.random() * wordBank.length)]);
     }
     return sentences.join(' ');
   }
 
-  // Otherwise pick individual drill words / patterns
-  const count = Math.min(Math.max(10, Math.floor(wordCount)), 50);
+  // Pick individual drill words / patterns to build an engaging session
+  const targetCount = Math.min(Math.max(15, Math.floor(wordCount)), 40);
   const selected: string[] = [];
-  for (let i = 0; i < count; i++) {
+  for (let i = 0; i < targetCount; i++) {
     selected.push(wordBank[Math.floor(Math.random() * wordBank.length)]);
   }
   return selected.join(' ');

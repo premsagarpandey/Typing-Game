@@ -1,3 +1,6 @@
+import { useMemo } from 'react';
+import { secureStorage, type TypingSessionRecord } from '../utils/secureStorage';
+
 const TOP_PLAYERS = [
   { rank: 1, name: 'SwiftFingers', wpm: 124, accuracy: 99 },
   { rank: 2, name: 'KeyMaster', wpm: 112, accuracy: 97 },
@@ -7,9 +10,39 @@ const TOP_PLAYERS = [
 ];
 
 export default function Leaderboard() {
+  const userBest = useMemo(() => {
+    const stats = secureStorage.getItem<TypingSessionRecord[]>('typlix_stats', []);
+    if (stats.length === 0) return null;
+    const sorted = [...stats].sort((a, b) => b.wpm - a.wpm);
+    return sorted[0];
+  }, []);
+
   return (
-    <div className="max-w-lg mx-auto py-8">
-      <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-6">Global Leaderboard</h2>
+    <div className="max-w-lg mx-auto py-8 space-y-6">
+      <div>
+        <h2 className="text-2xl font-bold text-slate-900 dark:text-white">Global Leaderboard</h2>
+        <p className="text-xs text-slate-500 dark:text-gray-400 mt-1">
+          Top verified typists from the Typlix community
+        </p>
+      </div>
+
+      {userBest && (
+        <div className="p-4 bg-blue-500/10 border border-blue-500/30 rounded-2xl flex items-center justify-between shadow-xs">
+          <div className="flex items-center gap-3">
+            <span className="w-8 h-8 rounded-full bg-blue-600 text-white font-bold text-xs flex items-center justify-center shadow-xs">
+              YOU
+            </span>
+            <div>
+              <div className="font-bold text-slate-900 dark:text-white text-sm">Your Personal Best</div>
+              <div className="text-[11px] text-slate-500 dark:text-gray-400">Level {userBest.level} • {userBest.date}</div>
+            </div>
+          </div>
+          <div className="flex items-center gap-3 text-sm font-mono font-bold">
+            <span className="text-blue-600 dark:text-blue-400">{userBest.wpm} WPM</span>
+            <span className="text-emerald-600 dark:text-emerald-400">{userBest.accuracy}%</span>
+          </div>
+        </div>
+      )}
 
       <div className="space-y-3">
         {TOP_PLAYERS.map((player) => (

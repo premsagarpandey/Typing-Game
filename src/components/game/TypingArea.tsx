@@ -2,7 +2,7 @@ import { useRef, useEffect } from 'react';
 import { motion, useAnimation } from 'framer-motion';
 import type { GameStatus } from '../../hooks/useTypingGame';
 import { antiCheatEngine } from '../../utils/antiCheat';
-import { useTheme } from '../../context/ThemeContext';
+import { useTheme } from '../../hooks/useTheme';
 
 interface TypingAreaProps {
   targetText: string;

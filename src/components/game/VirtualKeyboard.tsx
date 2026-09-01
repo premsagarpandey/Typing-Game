@@ -77,7 +77,7 @@ export default function VirtualKeyboard({ nextChar }: VirtualKeyboardProps) {
                   key={item.key}
                   className={`relative h-9 min-w-7 sm:min-w-9 px-1.5 flex flex-col items-center justify-center text-xs font-semibold rounded-lg border transition-all duration-150 ${
                     isMatch
-                      ? 'bg-blue-600 text-white border-blue-400 shadow-md shadow-blue-500/40 scale-110 z-10 animate-bounce'
+                      ? 'bg-blue-600 text-white border-blue-300 ring-2 ring-blue-400 shadow-lg shadow-blue-500/40 scale-105 z-10 animate-pulse'
                       : 'bg-white dark:bg-white/5 text-slate-700 dark:text-gray-300 border-slate-200 dark:border-white/10'
                   }`}
                 >
@@ -96,7 +96,7 @@ export default function VirtualKeyboard({ nextChar }: VirtualKeyboardProps) {
           <div
             className={`h-9 w-52 sm:w-72 flex items-center justify-center text-xs font-semibold rounded-lg border transition-all duration-150 ${
               targetChar === ' '
-                ? 'bg-blue-600 text-white border-blue-400 shadow-md shadow-blue-500/40 scale-105 z-10 animate-bounce'
+                ? 'bg-blue-600 text-white border-blue-300 ring-2 ring-blue-400 shadow-lg shadow-blue-500/40 scale-105 z-10 animate-pulse'
                 : 'bg-white dark:bg-white/5 text-slate-600 dark:text-gray-400 border-slate-200 dark:border-white/10'
             }`}
           >

@@ -101,6 +101,18 @@ interface SecureEnvelope<T> {
   ts: number;
 }
 
+export interface TypingSessionRecord {
+  id: string;
+  level: number;
+  wpm: number;
+  accuracy: number;
+  maxCombo: number;
+  date: string;
+  passed: boolean;
+}
+
+const memoryCache = new Map<string, unknown>();
+
 /**
  * Validates data against predefined game constraints
  */
@@ -120,6 +132,19 @@ function sanitizeAndValidate<T>(key: string, value: unknown, fallback: T): T {
     return fallback;
   }
 
+  if (key === 'typlix_stats') {
+    if (!Array.isArray(value)) return fallback;
+    const validRecords = value.filter(
+      (item): item is TypingSessionRecord =>
+        item &&
+        typeof item === 'object' &&
+        typeof item.wpm === 'number' &&
+        typeof item.accuracy === 'number' &&
+        typeof item.level === 'number'
+    );
+    return validRecords.slice(-50) as T;
+  }
+
   return value as T;
 }
 
@@ -127,9 +152,17 @@ export const secureStorage = {
   getItem<T>(key: string, fallback: T): T {
     if (typeof window === 'undefined') return fallback;
 
+    // Fast in-memory cache lookup
+    if (memoryCache.has(key)) {
+      return memoryCache.get(key) as T;
+    }
+
     try {
       const raw = window.localStorage.getItem(key);
-      if (!raw) return fallback;
+      if (!raw) {
+        memoryCache.set(key, fallback);
+        return fallback;
+      }
 
       // Check if it's stored in envelope format
       try {
@@ -139,7 +172,9 @@ export const secureStorage = {
           const expectedSig = computeSignature(key, JSON.stringify(envelope.data));
 
           if (envelope.sig === expectedSig) {
-            return sanitizeAndValidate(key, envelope.data, fallback);
+            const validated = sanitizeAndValidate(key, envelope.data, fallback);
+            memoryCache.set(key, validated);
+            return validated;
           } else {
             // Tampering detected: Signature mismatch
             console.warn(`[Typlix Security] Tamper detected on key '${key}'. Reverting to safe state.`);
@@ -164,6 +199,7 @@ export const secureStorage = {
       this.setItem(key, validated);
       return validated;
     } catch {
+      memoryCache.set(key, fallback);
       return fallback;
     }
   },
@@ -173,6 +209,8 @@ export const secureStorage = {
 
     try {
       const sanitized = sanitizeAndValidate(key, value, value);
+      memoryCache.set(key, sanitized);
+
       const dataStr = JSON.stringify(sanitized);
       const sig = computeSignature(key, dataStr);
 
@@ -189,6 +227,7 @@ export const secureStorage = {
   },
 
   removeItem(key: string): void {
+    memoryCache.delete(key);
     if (typeof window === 'undefined') return;
     try {
       window.localStorage.removeItem(key);
@@ -198,6 +237,7 @@ export const secureStorage = {
   },
 
   clear(): void {
+    memoryCache.clear();
     if (typeof window === 'undefined') return;
     try {
       window.localStorage.clear();

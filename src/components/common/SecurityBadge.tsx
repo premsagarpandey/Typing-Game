@@ -10,8 +10,10 @@ export default function SecurityBadge() {
         className="flex items-center gap-1.5 px-2.5 py-1 bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 rounded-full text-[11px] font-medium text-emerald-600 dark:text-emerald-400 transition-colors cursor-pointer"
         title="Typlix Security Active"
       >
-        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 dark:bg-emerald-400 animate-ping" />
-        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 dark:bg-emerald-400 -ml-3" />
+        <span className="relative flex h-2 w-2 shrink-0">
+          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+          <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500 dark:bg-emerald-400" />
+        </span>
         <span>Protected by Typlix Shield</span>
       </button>
 

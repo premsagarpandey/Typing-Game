@@ -95,7 +95,15 @@ export default function ResultsModal({
               : 'bg-blue-600 hover:bg-blue-500 shadow-blue-500/25 ring-2 ring-blue-400/40'
           }`}
         >
-          <span>{isPassed ? 'Next Level →' : 'Continue Anyway →'}</span>
+          <span>
+            {levelConfig.level >= 50
+              ? isPassed
+                ? 'Completed Course! 🏆'
+                : 'Replay Level 50'
+              : isPassed
+              ? 'Next Level →'
+              : 'Continue Anyway →'}
+          </span>
           <kbd className="px-2 py-0.5 text-[11px] font-mono bg-white/25 text-white rounded border border-white/30 shadow-xs">
             ↵ Enter
           </kbd>
