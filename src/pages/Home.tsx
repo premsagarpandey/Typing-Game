@@ -1,4 +1,5 @@
 import { useNavigate } from 'react-router-dom';
+import FingerPlacementTutorial from '../components/common/FingerPlacementTutorial';
 
 export default function Home() {
   const navigate = useNavigate();
@@ -28,6 +29,8 @@ export default function Home() {
           Start Lesson 1 (Home Row) →
         </button>
       </div>
+
+      <FingerPlacementTutorial />
 
       <div className="w-full grid grid-cols-1 sm:grid-cols-3 gap-4 text-left">
         <div className="p-4 rounded-xl bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 shadow-sm dark:shadow-none transition-colors">
