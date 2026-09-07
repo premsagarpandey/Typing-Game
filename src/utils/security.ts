@@ -7,11 +7,11 @@
  * Deep freezes an object to make it completely immutable against prototype tampering
  */
 export function deepFreeze<T extends object>(obj: T): Readonly<T> {
-  const propNames = Object.getOwnPropertyNames(obj);
+  const propNames = Object.getOwnPropertyNames(obj) as Array<keyof T>;
   for (const name of propNames) {
-    const value = (obj as any)[name];
+    const value = obj[name];
     if (value && typeof value === 'object') {
-      deepFreeze(value);
+      deepFreeze(value as object);
     }
   }
   return Object.freeze(obj);
