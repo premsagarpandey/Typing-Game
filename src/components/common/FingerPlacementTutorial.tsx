@@ -1,6 +1,3 @@
-import { motion } from 'framer-motion';
-import { PlayCircle } from 'lucide-react';
-
 export default function FingerPlacementTutorial() {
   return (
     <div className="w-full max-w-4xl mx-auto my-12 p-6 sm:p-10 bg-white dark:bg-slate-900 rounded-[2rem] shadow-2xl border border-slate-200 dark:border-slate-800">
