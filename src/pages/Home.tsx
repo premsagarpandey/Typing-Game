@@ -1,8 +1,9 @@
-import { useNavigate } from 'react-router-dom';
+import { useState } from 'react';
 import FingerPlacementTutorial from '../components/common/FingerPlacementTutorial';
+import FingerPlacementModal from '../components/common/FingerPlacementModal';
 
 export default function Home() {
-  const navigate = useNavigate();
+  const [showPlacementModal, setShowPlacementModal] = useState(false);
 
   return (
     <div className="flex flex-col items-center justify-center text-center max-w-2xl mx-auto py-8 sm:py-12">
@@ -23,12 +24,20 @@ export default function Home() {
 
       <div className="flex flex-wrap items-center justify-center gap-3 mb-10">
         <button
-          onClick={() => navigate('/game')}
+          onClick={() => setShowPlacementModal(true)}
           className="px-8 py-3.5 bg-blue-600 hover:bg-blue-500 active:scale-95 transition-all text-white text-base sm:text-lg font-semibold rounded-xl shadow-lg shadow-blue-500/25 cursor-pointer"
         >
           Start Lesson 1 (Home Row) →
         </button>
       </div>
+
+      {/* 2-Second Finger Placement Countdown Modal */}
+      <FingerPlacementModal
+        isOpen={showPlacementModal}
+        onClose={() => setShowPlacementModal(false)}
+        targetPath="/game"
+        durationSeconds={2}
+      />
 
       <FingerPlacementTutorial />
 
