@@ -109,6 +109,8 @@ export interface TypingSessionRecord {
   maxCombo: number;
   date: string;
   passed: boolean;
+  mode?: 'lesson' | 'timed' | 'custom';
+  modeLabel?: string;
 }
 
 const memoryCache = new Map<string, unknown>();

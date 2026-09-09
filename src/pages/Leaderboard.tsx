@@ -34,7 +34,9 @@ export default function Leaderboard() {
             </span>
             <div>
               <div className="font-bold text-slate-900 dark:text-white text-sm">Your Personal Best</div>
-              <div className="text-[11px] text-slate-500 dark:text-gray-400">Level {userBest.level} • {userBest.date}</div>
+              <div className="text-[11px] text-slate-500 dark:text-gray-400">
+                {userBest.modeLabel || (userBest.level > 0 ? `Level ${userBest.level}` : 'Practice')} • {userBest.date}
+              </div>
             </div>
           </div>
           <div className="flex items-center gap-3 text-sm font-mono font-bold">

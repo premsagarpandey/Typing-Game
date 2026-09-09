@@ -18,12 +18,7 @@ export default function FingerPlacementModal({
   const [timeLeft, setTimeLeft] = useState(durationSeconds);
 
   useEffect(() => {
-    if (!isOpen) {
-      setTimeLeft(durationSeconds);
-      return;
-    }
-
-    setTimeLeft(durationSeconds);
+    if (!isOpen) return;
 
     const stepMs = 100;
     const totalSteps = (durationSeconds * 1000) / stepMs;

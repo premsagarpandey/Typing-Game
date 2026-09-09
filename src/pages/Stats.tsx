@@ -97,7 +97,7 @@ export default function Stats() {
             <table className="w-full text-left text-sm text-slate-700 dark:text-gray-300">
               <thead className="bg-slate-100/80 dark:bg-white/5 text-xs uppercase font-semibold text-slate-600 dark:text-gray-300 border-b border-slate-200 dark:border-white/10">
                 <tr>
-                  <th className="py-3 px-4">Level</th>
+                  <th className="py-3 px-4">Mode / Level</th>
                   <th className="py-3 px-4">Speed</th>
                   <th className="py-3 px-4">Accuracy</th>
                   <th className="py-3 px-4">Combo</th>
@@ -109,7 +109,7 @@ export default function Stats() {
                 {recentSessions.map((session) => (
                   <tr key={session.id} className="hover:bg-slate-50 dark:hover:bg-white/5 transition-colors">
                     <td className="py-3 px-4 font-semibold text-slate-900 dark:text-white">
-                      Level {session.level}
+                      {session.modeLabel || (session.level > 0 ? `Level ${session.level}` : 'Practice')}
                     </td>
                     <td className="py-3 px-4 font-mono text-blue-600 dark:text-blue-400 font-bold">
                       {session.wpm} WPM
@@ -131,7 +131,7 @@ export default function Stats() {
                             : 'bg-red-500/15 text-red-700 dark:text-red-400 border border-red-500/30'
                         }`}
                       >
-                        {session.passed ? 'PASSED' : 'PRACTICE'}
+                        {session.passed ? 'COMPLETED' : 'PRACTICE'}
                       </span>
                     </td>
                   </tr>
