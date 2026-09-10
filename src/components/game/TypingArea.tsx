@@ -29,8 +29,8 @@ export default function TypingArea({
   useEffect(() => {
     if (shakeTrigger > 0) {
       controls.start({
-        x: [0, -10, 10, -8, 8, -4, 4, 0],
-        transition: { duration: 0.35 },
+        x: [0, -6, 6, -4, 4, 0],
+        transition: { duration: 0.3 },
       });
     }
   }, [shakeTrigger, controls]);
@@ -48,28 +48,23 @@ export default function TypingArea({
 
   const handlePaste = (e: React.ClipboardEvent) => {
     e.preventDefault();
-    console.warn('[Typlix Anti-Cheat] Paste attempt blocked');
   };
 
   return (
     <div className="relative w-full">
       {securityFlag && (
-        <div className="mb-3 px-4 py-2 bg-red-500/10 dark:bg-red-500/20 border border-red-500/30 dark:border-red-500/40 rounded-xl text-red-600 dark:text-red-300 text-xs font-semibold flex items-center justify-between animate-pulse">
-          <div className="flex items-center gap-2">
-            <span>🛡️ Anti-Cheat Alert:</span>
-            <span>{securityFlag}</span>
-          </div>
-          <span className="text-[10px] bg-red-500/20 dark:bg-red-500/30 px-2 py-0.5 rounded">FLAGGED</span>
+        <div className="mb-3 px-4 py-2 border border-neutral-300 dark:border-neutral-700 rounded-md text-neutral-600 dark:text-neutral-400 text-xs font-medium flex items-center justify-between">
+          <span>Flagged: {securityFlag}</span>
         </div>
       )}
 
       <motion.div
         animate={controls}
-        className={`relative bg-white/80 dark:bg-white/10 backdrop-blur-lg p-6 sm:p-8 rounded-2xl border ${
+        className={`relative p-6 sm:p-8 rounded-lg border ${
           securityFlag
-            ? 'border-red-500/50'
-            : 'border-slate-200 dark:border-white/20'
-        } text-2xl sm:text-3xl font-mono cursor-text shadow-xl dark:shadow-2xl overflow-hidden min-h-[160px] select-none transition-colors`}
+            ? 'border-red-400/50 dark:border-red-500/30'
+            : 'border-neutral-200 dark:border-neutral-800'
+        } text-xl sm:text-2xl font-mono cursor-text overflow-hidden min-h-[160px] select-none transition-colors bg-neutral-50 dark:bg-neutral-900/50`}
         onClick={() => inputRef.current?.focus()}
       >
         <input
@@ -90,7 +85,7 @@ export default function TypingArea({
           className="absolute opacity-0 h-0 w-0 pointer-events-none"
         />
 
-        <div className="flex flex-wrap leading-relaxed tracking-wider select-none text-slate-400 dark:text-gray-400">
+        <div className="flex flex-wrap leading-relaxed tracking-wide select-none">
           {targetText.split('').map((char, index) => {
             const isTyped = index < typedText.length;
             const isCorrect = isTyped && typedText[index] === char;
@@ -103,11 +98,11 @@ export default function TypingArea({
                 {isCurrent && (
                   <motion.span
                     layoutId="caret"
-                    className="absolute left-0 bottom-0.5 w-full h-[3px] bg-blue-600 dark:bg-blue-400 rounded-full"
+                    className="absolute left-0 bottom-0.5 w-[2px] h-[60%] bg-neutral-900 dark:bg-neutral-100 rounded-full"
                     initial={{ opacity: 0 }}
-                    animate={{ opacity: [1, 0.3, 1] }}
+                    animate={{ opacity: [1, 0, 1] }}
                     transition={{
-                      opacity: { repeat: Infinity, duration: 0.9 },
+                      opacity: { repeat: Infinity, duration: 1 },
                       layout: { type: 'spring', stiffness: 350, damping: 30 },
                     }}
                   />
@@ -116,24 +111,22 @@ export default function TypingArea({
                   initial={false}
                   animate={{
                     color: isError
-                      ? (isDark ? '#f87171' : '#dc2626')
+                      ? (isDark ? '#ef4444' : '#dc2626')
                       : isCorrect
-                      ? (isDark ? '#4ade80' : '#16a34a')
+                      ? (isDark ? '#d4d4d4' : '#404040')
                       : isCurrent
-                      ? (isDark ? '#60a5fa' : '#2563eb')
-                      : (isDark ? '#9ca3af' : '#94a3b8'),
-                    scale: isTyped ? [1, 1.1, 1] : 1,
+                      ? (isDark ? '#e5e5e5' : '#171717')
+                      : (isDark ? '#525252' : '#a3a3a3'),
+                    scale: isTyped ? [1, 1.05, 1] : 1,
                   }}
-                  transition={{ duration: 0.15 }}
-                  className={`transition-colors ${
-                    isError ? 'bg-red-500/20 dark:bg-red-500/30 rounded-xs px-0.5' : ''
+                  transition={{ duration: 0.1 }}
+                  className={`${
+                    isError ? 'bg-red-500/10 dark:bg-red-500/15 rounded-sm px-0.5' : ''
                   } ${
-                    isSpace && !isTyped && !isCurrent ? 'opacity-40 font-semibold' : ''
-                  } ${
-                    isSpace && isCurrent ? 'font-bold scale-110' : ''
+                    isSpace && !isTyped && !isCurrent ? 'opacity-30' : ''
                   }`}
                 >
-                  {isSpace ? '_' : char}
+                  {isSpace ? '·' : char}
                 </motion.span>
               </span>
             );

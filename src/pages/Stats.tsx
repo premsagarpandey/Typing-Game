@@ -37,67 +37,66 @@ export default function Stats() {
   return (
     <div className="max-w-2xl mx-auto py-8 space-y-6">
       <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-bold text-slate-900 dark:text-white">Your Typing Statistics</h2>
+        <h2 className="text-xl font-semibold text-neutral-900 dark:text-neutral-100">Statistics</h2>
         <Link
           to="/game"
-          className="px-3.5 py-1.5 bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold rounded-xl shadow-xs transition-all"
+          className="px-3 py-1.5 text-xs font-medium rounded-md bg-neutral-900 dark:bg-neutral-100 text-white dark:text-neutral-900 hover:opacity-90 transition-opacity"
         >
-          Practice Now →
+          Practice
         </Link>
       </div>
 
       {/* Summary Cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        <div className="p-4 bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-2xl shadow-xs">
-          <div className="text-xs text-slate-500 dark:text-gray-400 font-medium">Best Speed</div>
-          <div className="text-2xl font-bold text-blue-600 dark:text-blue-400 mt-1 font-mono">
-            {summary.bestWpm} <span className="text-xs font-normal">WPM</span>
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-px bg-neutral-200 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-800 rounded-lg overflow-hidden">
+        <div className="p-4 bg-neutral-50 dark:bg-neutral-950">
+          <div className="text-xs text-neutral-500 dark:text-neutral-500 font-medium">Best Speed</div>
+          <div className="text-2xl font-bold text-neutral-900 dark:text-neutral-100 mt-1 font-mono">
+            {summary.bestWpm} <span className="text-xs font-normal text-neutral-400">wpm</span>
           </div>
         </div>
 
-        <div className="p-4 bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-2xl shadow-xs">
-          <div className="text-xs text-slate-500 dark:text-gray-400 font-medium">Avg Accuracy</div>
-          <div className="text-2xl font-bold text-emerald-600 dark:text-emerald-400 mt-1 font-mono">
-            {summary.avgAccuracy}%
+        <div className="p-4 bg-neutral-50 dark:bg-neutral-950">
+          <div className="text-xs text-neutral-500 dark:text-neutral-500 font-medium">Avg Accuracy</div>
+          <div className="text-2xl font-bold text-neutral-900 dark:text-neutral-100 mt-1 font-mono">
+            {summary.avgAccuracy}<span className="text-xs font-normal text-neutral-400">%</span>
           </div>
         </div>
 
-        <div className="p-4 bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-2xl shadow-xs">
-          <div className="text-xs text-slate-500 dark:text-gray-400 font-medium">Tests Completed</div>
-          <div className="text-2xl font-bold text-slate-900 dark:text-white mt-1 font-mono">
+        <div className="p-4 bg-neutral-50 dark:bg-neutral-950">
+          <div className="text-xs text-neutral-500 dark:text-neutral-500 font-medium">Tests Done</div>
+          <div className="text-2xl font-bold text-neutral-900 dark:text-neutral-100 mt-1 font-mono">
             {summary.total}
           </div>
         </div>
 
-        <div className="p-4 bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-2xl shadow-xs">
-          <div className="text-xs text-slate-500 dark:text-gray-400 font-medium">Current Level</div>
-          <div className="text-2xl font-bold text-indigo-600 dark:text-indigo-400 mt-1 font-mono">
-            Lvl {currentLevel}
+        <div className="p-4 bg-neutral-50 dark:bg-neutral-950">
+          <div className="text-xs text-neutral-500 dark:text-neutral-500 font-medium">Level</div>
+          <div className="text-2xl font-bold text-neutral-900 dark:text-neutral-100 mt-1 font-mono">
+            {currentLevel}
           </div>
         </div>
       </div>
 
       {/* Session History Table */}
-      <div className="overflow-hidden rounded-2xl border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 backdrop-blur-md shadow-sm dark:shadow-none transition-colors">
-        <div className="p-4 border-b border-slate-200 dark:border-white/10 flex items-center justify-between">
-          <h3 className="font-semibold text-slate-900 dark:text-white text-sm">Recent Typing Sessions</h3>
-          <span className="text-xs text-slate-400 dark:text-gray-500">{recentSessions.length} recorded</span>
+      <div className="overflow-hidden rounded-lg border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-950">
+        <div className="p-4 border-b border-neutral-200 dark:border-neutral-800 flex items-center justify-between">
+          <h3 className="font-medium text-neutral-900 dark:text-neutral-100 text-sm">Recent Sessions</h3>
+          <span className="text-xs text-neutral-400 dark:text-neutral-600">{recentSessions.length} recorded</span>
         </div>
 
         {recentSessions.length === 0 ? (
-          <div className="py-12 text-center text-slate-500 dark:text-gray-400 text-sm space-y-2">
-            <p className="text-2xl">⌨️</p>
-            <p className="font-medium">No sessions recorded yet.</p>
-            <p className="text-xs text-slate-400 dark:text-gray-500">
-              Complete your first lesson on the Play page to start tracking your progress!
+          <div className="py-12 text-center text-neutral-500 dark:text-neutral-500 text-sm space-y-1">
+            <p className="font-medium">No sessions yet.</p>
+            <p className="text-xs text-neutral-400 dark:text-neutral-600">
+              Complete a lesson to start tracking progress.
             </p>
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-left text-sm text-slate-700 dark:text-gray-300">
-              <thead className="bg-slate-100/80 dark:bg-white/5 text-xs uppercase font-semibold text-slate-600 dark:text-gray-300 border-b border-slate-200 dark:border-white/10">
+            <table className="w-full text-left text-sm">
+              <thead className="bg-neutral-100/80 dark:bg-neutral-900/80 text-xs uppercase font-medium text-neutral-500 dark:text-neutral-500 border-b border-neutral-200 dark:border-neutral-800">
                 <tr>
-                  <th className="py-3 px-4">Mode / Level</th>
+                  <th className="py-3 px-4">Mode</th>
                   <th className="py-3 px-4">Speed</th>
                   <th className="py-3 px-4">Accuracy</th>
                   <th className="py-3 px-4">Combo</th>
@@ -105,33 +104,33 @@ export default function Stats() {
                   <th className="py-3 px-4 text-right">Result</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-200 dark:divide-white/5">
+              <tbody className="divide-y divide-neutral-200 dark:divide-neutral-800/60">
                 {recentSessions.map((session) => (
-                  <tr key={session.id} className="hover:bg-slate-50 dark:hover:bg-white/5 transition-colors">
-                    <td className="py-3 px-4 font-semibold text-slate-900 dark:text-white">
+                  <tr key={session.id} className="hover:bg-neutral-100/50 dark:hover:bg-neutral-900/50 transition-colors">
+                    <td className="py-3 px-4 font-medium text-neutral-900 dark:text-neutral-100 text-xs">
                       {session.modeLabel || (session.level > 0 ? `Level ${session.level}` : 'Practice')}
                     </td>
-                    <td className="py-3 px-4 font-mono text-blue-600 dark:text-blue-400 font-bold">
-                      {session.wpm} WPM
+                    <td className="py-3 px-4 font-mono text-neutral-700 dark:text-neutral-300 text-xs">
+                      {session.wpm} wpm
                     </td>
-                    <td className="py-3 px-4 font-mono text-emerald-600 dark:text-emerald-400 font-semibold">
+                    <td className="py-3 px-4 font-mono text-neutral-700 dark:text-neutral-300 text-xs">
                       {session.accuracy}%
                     </td>
-                    <td className="py-3 px-4 font-mono text-amber-600 dark:text-amber-400">
+                    <td className="py-3 px-4 font-mono text-neutral-700 dark:text-neutral-300 text-xs">
                       {session.maxCombo}x
                     </td>
-                    <td className="py-3 px-4 text-xs text-slate-500 dark:text-gray-400">
+                    <td className="py-3 px-4 text-xs text-neutral-400 dark:text-neutral-500">
                       {session.date}
                     </td>
                     <td className="py-3 px-4 text-right">
                       <span
-                        className={`inline-block px-2 py-0.5 rounded text-[11px] font-semibold ${
+                        className={`inline-block px-2 py-0.5 rounded text-[11px] font-medium ${
                           session.passed
-                            ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border border-emerald-500/30'
-                            : 'bg-red-500/15 text-red-700 dark:text-red-400 border border-red-500/30'
+                            ? 'bg-neutral-200 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300'
+                            : 'bg-neutral-100 dark:bg-neutral-800/50 text-neutral-500 dark:text-neutral-500'
                         }`}
                       >
-                        {session.passed ? 'COMPLETED' : 'PRACTICE'}
+                        {session.passed ? 'Passed' : 'Practice'}
                       </span>
                     </td>
                   </tr>

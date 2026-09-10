@@ -7,7 +7,6 @@ import Stats from './pages/Stats';
 import Leaderboard from './pages/Leaderboard';
 import Settings from './pages/Settings';
 import ErrorBoundary from './components/common/ErrorBoundary';
-import SecurityBadge from './components/common/SecurityBadge';
 import { initDevToolsSecurityWarning } from './utils/security';
 import { ThemeProvider } from './context/ThemeContext';
 
@@ -20,9 +19,9 @@ export default function App() {
     <ErrorBoundary>
       <ThemeProvider>
         <Router>
-          <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 flex flex-col font-sans selection:bg-blue-500 selection:text-white transition-colors duration-200">
+          <div className="min-h-screen bg-neutral-50 dark:bg-neutral-950 text-neutral-900 dark:text-neutral-100 flex flex-col transition-colors duration-200">
             <Navbar />
-            <main className="flex-1 w-full max-w-5xl mx-auto px-4 sm:px-6 py-6">
+            <main className="flex-1 w-full max-w-4xl mx-auto px-5 sm:px-8 py-8">
               <Routes>
                 <Route path="/" element={<Home />} />
                 <Route path="/game" element={<Game />} />
@@ -32,9 +31,8 @@ export default function App() {
                 <Route path="*" element={<Navigate to="/" replace />} />
               </Routes>
             </main>
-            <footer className="w-full py-4 text-center text-xs text-slate-500 border-t border-slate-200 dark:border-slate-900 flex flex-col sm:flex-row items-center justify-between px-6 max-w-5xl mx-auto gap-3">
-              <div>© {new Date().getFullYear()} Typlix. All rights reserved.</div>
-              <SecurityBadge />
+            <footer className="w-full py-5 text-center text-xs text-neutral-500 dark:text-neutral-600 border-t border-neutral-200 dark:border-neutral-800/60 max-w-4xl mx-auto px-5 sm:px-8">
+              <span>© {new Date().getFullYear()} Typlix</span>
             </footer>
           </div>
         </Router>

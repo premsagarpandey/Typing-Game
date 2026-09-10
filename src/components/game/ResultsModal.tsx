@@ -32,94 +32,81 @@ export default function ResultsModal({
   const isPassed = status === 'passed' && !securityFlag;
 
   const getTitle = () => {
-    if (securityFlag) return 'Verification Flagged';
+    if (securityFlag) return 'Session Flagged';
     if (isLesson) {
       return isPassed
-        ? `Level ${levelConfig?.level || 1} Cleared!`
-        : `Keep Going! Practice Makes Perfect`;
+        ? `Level ${levelConfig?.level || 1} Cleared`
+        : 'Keep Practicing';
     }
-    if (mode === 'timed') {
-      return '⏱️ Speed Test Completed!';
-    }
-    return '📝 Custom Text Completed!';
+    if (mode === 'timed') return 'Test Complete';
+    return 'Practice Complete';
   };
 
   const getSubtitle = () => {
-    if (securityFlag) return 'Suspicious behavior detected during this session.';
+    if (securityFlag) return 'Suspicious activity was detected during this session.';
     if (isLesson) {
       return isPassed
-        ? 'Awesome job! You achieved the target score for this lesson.'
-        : 'Do not worry about speed. Focus on building muscle memory!';
+        ? 'You met the target requirements for this level.'
+        : 'Focus on accuracy first, speed will follow.';
     }
     if (mode === 'timed') {
-      return `Great performance on your ${modeLabel || 'Timed'} test!`;
+      return `Results for your ${modeLabel || 'timed'} session.`;
     }
-    return 'You have successfully finished typing your custom text.';
+    return 'You finished typing the custom text.';
   };
 
   return (
-    <div className="w-full max-w-md mx-auto p-6 bg-white/95 dark:bg-gray-900/95 backdrop-blur-xl border border-slate-200 dark:border-white/15 rounded-2xl text-center shadow-2xl animate-fade-in transition-colors">
-      <div className="text-3xl mb-1">
-        {securityFlag ? '🛡️' : isPassed ? '🎉' : '💪'}
-      </div>
-      <h2
-        className={`text-xl sm:text-2xl font-black uppercase tracking-wider mb-2 ${
-          securityFlag
-            ? 'text-amber-500 dark:text-amber-400'
-            : isPassed
-            ? 'text-emerald-600 dark:text-emerald-400'
-            : 'text-blue-600 dark:text-blue-400'
-        }`}
-      >
+    <div className="w-full max-w-sm mx-auto p-6 bg-neutral-50 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-lg text-center animate-fade-in transition-colors">
+      <h2 className="text-lg font-semibold text-neutral-900 dark:text-neutral-100 mb-1">
         {getTitle()}
       </h2>
 
-      <p className="text-xs text-slate-500 dark:text-gray-400 mb-4">{getSubtitle()}</p>
+      <p className="text-xs text-neutral-500 dark:text-neutral-500 mb-5">{getSubtitle()}</p>
 
       {securityFlag && (
-        <div className="mb-4 p-3 bg-amber-500/10 border border-amber-500/30 rounded-xl text-amber-600 dark:text-amber-300 text-xs font-medium">
-          <span className="font-bold">Anti-Cheat Alert:</span> {securityFlag}
+        <div className="mb-4 p-3 border border-neutral-300 dark:border-neutral-700 rounded-md text-neutral-600 dark:text-neutral-400 text-xs">
+          {securityFlag}
         </div>
       )}
 
-      <div className="space-y-2.5 mb-5 text-slate-600 dark:text-gray-300 text-sm bg-slate-50 dark:bg-white/5 p-4 rounded-xl border border-slate-200 dark:border-white/10">
-        <div className="flex justify-between border-b border-slate-200 dark:border-white/10 pb-2">
-          <span>Your Speed:</span>
-          <span className="font-semibold text-slate-900 dark:text-gray-100 font-mono">
-            {wpm} WPM{' '}
+      <div className="space-y-2 mb-5 text-sm">
+        <div className="flex justify-between py-2 border-b border-neutral-200 dark:border-neutral-800">
+          <span className="text-neutral-500 dark:text-neutral-500">Speed</span>
+          <span className="font-mono font-medium text-neutral-900 dark:text-neutral-100">
+            {wpm} wpm
             {isLesson && levelConfig && (
-              <span className="text-xs text-slate-400 dark:text-gray-500">
-                (Goal: {levelConfig.targetWpm})
+              <span className="text-xs text-neutral-400 dark:text-neutral-500 ml-1">
+                / {levelConfig.targetWpm}
               </span>
             )}
           </span>
         </div>
-        <div className="flex justify-between border-b border-slate-200 dark:border-white/10 pb-2">
-          <span>Your Accuracy:</span>
-          <span className="font-semibold text-slate-900 dark:text-gray-100 font-mono">
-            {accuracy}%{' '}
+        <div className="flex justify-between py-2 border-b border-neutral-200 dark:border-neutral-800">
+          <span className="text-neutral-500 dark:text-neutral-500">Accuracy</span>
+          <span className="font-mono font-medium text-neutral-900 dark:text-neutral-100">
+            {accuracy}%
             {isLesson && levelConfig && (
-              <span className="text-xs text-slate-400 dark:text-gray-500">
-                (Goal: {levelConfig.targetAccuracy}%)
+              <span className="text-xs text-neutral-400 dark:text-neutral-500 ml-1">
+                / {levelConfig.targetAccuracy}%
               </span>
             )}
           </span>
         </div>
-        <div className="flex justify-between">
-          <span>Highest Combo:</span>
-          <span className="font-semibold text-amber-600 dark:text-amber-400 font-mono">
+        <div className="flex justify-between py-2">
+          <span className="text-neutral-500 dark:text-neutral-500">Best Combo</span>
+          <span className="font-mono font-medium text-neutral-900 dark:text-neutral-100">
             {maxCombo}x
           </span>
         </div>
       </div>
 
-      <div className="flex flex-col sm:flex-row gap-2.5">
+      <div className="flex gap-2">
         <button
           onClick={onRetry}
-          className="flex-1 py-3 px-4 bg-slate-100 hover:bg-slate-200 dark:bg-white/10 dark:hover:bg-white/15 active:scale-95 transition-all text-slate-800 dark:text-white font-semibold rounded-xl text-sm border border-slate-300 dark:border-white/10 cursor-pointer flex items-center justify-center gap-2"
+          className="flex-1 py-2.5 px-4 border border-neutral-300 dark:border-neutral-700 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors text-neutral-700 dark:text-neutral-300 font-medium rounded-md text-sm cursor-pointer flex items-center justify-center gap-2"
         >
-          <span>Play Again ↺</span>
-          <kbd className="px-1.5 py-0.5 text-[11px] font-mono bg-slate-200 dark:bg-white/15 text-slate-600 dark:text-gray-300 rounded border border-slate-300 dark:border-white/10">
+          Retry
+          <kbd className="px-1.5 py-0.5 text-[10px] font-mono bg-neutral-200 dark:bg-neutral-800 text-neutral-500 rounded">
             R
           </kbd>
         </button>
@@ -127,58 +114,38 @@ export default function ResultsModal({
         {isLesson && onNextLevel ? (
           <button
             onClick={onNextLevel}
-            className={`flex-1 py-3 px-4 active:scale-95 transition-all text-white font-semibold rounded-xl text-sm shadow-md cursor-pointer flex items-center justify-center gap-2 ${
-              isPassed
-                ? 'bg-emerald-600 hover:bg-emerald-500 shadow-emerald-500/25 ring-2 ring-emerald-400/40'
-                : 'bg-blue-600 hover:bg-blue-500 shadow-blue-500/25 ring-2 ring-blue-400/40'
-            }`}
+            className="flex-1 py-2.5 px-4 bg-neutral-900 dark:bg-neutral-100 text-white dark:text-neutral-900 font-medium rounded-md text-sm cursor-pointer flex items-center justify-center gap-2 hover:opacity-90 transition-opacity"
           >
-            <span>
-              {levelConfig && levelConfig.level >= 50
-                ? isPassed
-                  ? 'Completed Course! 🏆'
-                  : 'Replay Level 50'
-                : isPassed
-                ? 'Next Level →'
-                : 'Continue Anyway →'}
-            </span>
-            <kbd className="px-2 py-0.5 text-[11px] font-mono bg-white/25 text-white rounded border border-white/30 shadow-xs">
-              ↵ Enter
+            {levelConfig && levelConfig.level >= 50
+              ? isPassed ? 'Done' : 'Replay'
+              : isPassed ? 'Next' : 'Skip'}
+            <kbd className="px-1.5 py-0.5 text-[10px] font-mono bg-white/20 dark:bg-neutral-900/20 rounded">
+              ↵
             </kbd>
           </button>
         ) : mode === 'custom' && onOpenCustomModal ? (
           <button
             onClick={onOpenCustomModal}
-            className="flex-1 py-3 px-4 bg-blue-600 hover:bg-blue-500 text-white font-semibold rounded-xl text-sm shadow-md shadow-blue-500/25 cursor-pointer flex items-center justify-center gap-2"
+            className="flex-1 py-2.5 px-4 bg-neutral-900 dark:bg-neutral-100 text-white dark:text-neutral-900 font-medium rounded-md text-sm cursor-pointer hover:opacity-90 transition-opacity"
           >
-            <span>Edit Text 📝</span>
+            Edit Text
           </button>
         ) : (
           <button
             onClick={onRetry}
-            className="flex-1 py-3 px-4 bg-blue-600 hover:bg-blue-500 text-white font-semibold rounded-xl text-sm shadow-md shadow-blue-500/25 cursor-pointer flex items-center justify-center gap-2"
+            className="flex-1 py-2.5 px-4 bg-neutral-900 dark:bg-neutral-100 text-white dark:text-neutral-900 font-medium rounded-md text-sm cursor-pointer flex items-center justify-center gap-2 hover:opacity-90 transition-opacity"
           >
-            <span>Start Next Test →</span>
-            <kbd className="px-2 py-0.5 text-[11px] font-mono bg-white/25 text-white rounded border border-white/30 shadow-xs">
-              ↵ Enter
+            Next
+            <kbd className="px-1.5 py-0.5 text-[10px] font-mono bg-white/20 dark:bg-neutral-900/20 rounded">
+              ↵
             </kbd>
           </button>
         )}
       </div>
 
-      <div className="mt-3.5 pt-3 border-t border-slate-200/80 dark:border-white/10 flex items-center justify-center gap-1.5 text-[11px] text-slate-500 dark:text-gray-400">
-        <span>⚡</span>
-        <span>
-          Press{' '}
-          <kbd className="px-1.5 py-0.5 font-mono text-slate-700 dark:text-slate-200 bg-slate-200/80 dark:bg-white/15 rounded text-[10px] font-bold">
-            Enter ↵
-          </kbd>{' '}
-          or{' '}
-          <kbd className="px-1.5 py-0.5 font-mono text-slate-700 dark:text-slate-200 bg-slate-200/80 dark:bg-white/15 rounded text-[10px] font-bold">
-            R
-          </kbd>{' '}
-          on your keyboard to continue
-        </span>
+      <div className="mt-3 pt-3 border-t border-neutral-200 dark:border-neutral-800 text-[11px] text-neutral-400 dark:text-neutral-600">
+        Press <kbd className="px-1 py-0.5 font-mono bg-neutral-200 dark:bg-neutral-800 rounded text-[10px]">Enter</kbd> or{' '}
+        <kbd className="px-1 py-0.5 font-mono bg-neutral-200 dark:bg-neutral-800 rounded text-[10px]">R</kbd> to continue
       </div>
     </div>
   );

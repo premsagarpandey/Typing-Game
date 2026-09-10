@@ -140,80 +140,64 @@ export default function Game() {
   }, [status, handleNextLevel, handleRetry]);
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-[75vh] w-full max-w-3xl mx-auto gap-4 py-2">
-      {/* Top Mode Switcher Bar */}
+    <div className="flex flex-col items-center justify-center min-h-[75vh] w-full max-w-3xl mx-auto gap-5 py-2">
+      {/* Mode Switcher */}
       <div className="w-full flex items-center justify-center">
-        <div className="p-1 bg-slate-200/80 dark:bg-white/10 rounded-2xl flex items-center gap-1 shadow-xs backdrop-blur-md">
-          <button
-            onClick={() => handleSwitchMode('lesson')}
-            className={`px-4 py-1.5 rounded-xl text-xs sm:text-sm font-semibold transition-all cursor-pointer ${
-              mode === 'lesson'
-                ? 'bg-white dark:bg-blue-600 text-blue-600 dark:text-white shadow-sm'
-                : 'text-slate-600 dark:text-gray-300 hover:text-slate-900 dark:hover:text-white'
-            }`}
-          >
-            🎓 Lessons (1-50)
-          </button>
-          <button
-            onClick={() => handleSwitchMode('timed')}
-            className={`px-4 py-1.5 rounded-xl text-xs sm:text-sm font-semibold transition-all cursor-pointer ${
-              mode === 'timed'
-                ? 'bg-white dark:bg-blue-600 text-blue-600 dark:text-white shadow-sm'
-                : 'text-slate-600 dark:text-gray-300 hover:text-slate-900 dark:hover:text-white'
-            }`}
-          >
-            ⏱️ Timed Test
-          </button>
-          <button
-            onClick={() => handleSwitchMode('custom')}
-            className={`px-4 py-1.5 rounded-xl text-xs sm:text-sm font-semibold transition-all cursor-pointer ${
-              mode === 'custom'
-                ? 'bg-white dark:bg-blue-600 text-blue-600 dark:text-white shadow-sm'
-                : 'text-slate-600 dark:text-gray-300 hover:text-slate-900 dark:hover:text-white'
-            }`}
-          >
-            📝 Custom Text
-          </button>
+        <div className="flex items-center border-b border-neutral-200 dark:border-neutral-800">
+          {(['lesson', 'timed', 'custom'] as GameMode[]).map((m) => {
+            const labels: Record<GameMode, string> = {
+              lesson: 'Lessons',
+              timed: 'Timed',
+              custom: 'Custom',
+            };
+            return (
+              <button
+                key={m}
+                onClick={() => handleSwitchMode(m)}
+                className={`px-4 py-2 text-sm font-medium transition-colors cursor-pointer border-b-2 -mb-px ${
+                  mode === m
+                    ? 'border-neutral-900 dark:border-neutral-100 text-neutral-900 dark:text-neutral-100'
+                    : 'border-transparent text-neutral-400 dark:text-neutral-500 hover:text-neutral-700 dark:hover:text-neutral-300'
+                }`}
+              >
+                {labels[m]}
+              </button>
+            );
+          })}
         </div>
       </div>
 
-      {/* Mode Specific Controls & Header */}
+      {/* Mode Specific Controls */}
       {mode === 'lesson' && (
-        <div className="w-full bg-white/80 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-2xl p-4 sm:p-5 shadow-xs transition-colors space-y-3">
+        <div className="w-full border border-neutral-200 dark:border-neutral-800 rounded-lg p-4 sm:p-5 space-y-3">
           <div className="flex flex-wrap items-center justify-between gap-3">
-            <div className="flex items-center gap-2">
-              <span className="px-2.5 py-1 bg-blue-500/10 text-blue-600 dark:text-blue-400 font-bold text-xs rounded-full border border-blue-500/20">
+            <div>
+              <span className="text-xs text-neutral-400 dark:text-neutral-500 font-medium uppercase tracking-wider">
                 {levelConfig.category}
               </span>
-              <h2 className="text-lg sm:text-xl font-bold text-slate-900 dark:text-white">
+              <h2 className="text-lg font-semibold text-neutral-900 dark:text-neutral-100">
                 Level {currentLevel}: {levelConfig.title}
               </h2>
             </div>
 
-            {/* Quick Level Selector & Navigation */}
-            <div className="flex items-center gap-1.5 sm:gap-2">
+            <div className="flex items-center gap-1.5">
               <button
                 onClick={handlePrevLevel}
                 disabled={currentLevel <= 1}
-                className="px-2.5 py-1 text-xs font-semibold rounded-lg border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 hover:bg-slate-100 dark:hover:bg-white/10 disabled:opacity-40 disabled:pointer-events-none cursor-pointer transition-colors text-slate-700 dark:text-gray-200"
-                title="Previous Level"
+                className="px-2.5 py-1 text-xs font-medium rounded-md border border-neutral-200 dark:border-neutral-700 hover:bg-neutral-100 dark:hover:bg-neutral-800 disabled:opacity-30 disabled:pointer-events-none cursor-pointer transition-colors text-neutral-600 dark:text-neutral-400"
               >
-                ← Prev
+                Prev
               </button>
 
               <select
                 aria-label="Select Level"
                 value={currentLevel}
                 onChange={(e) => handleSelectLevel(Number(e.target.value))}
-                className="px-2.5 py-1 text-xs font-semibold rounded-lg border border-slate-200 dark:border-white/10 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 cursor-pointer focus:outline-none focus:ring-1 focus:ring-blue-500"
+                className="px-2 py-1 text-xs font-medium rounded-md border border-neutral-200 dark:border-neutral-700 bg-transparent text-neutral-700 dark:text-neutral-300 cursor-pointer focus:outline-none"
               >
                 {LEVEL_OPTIONS.map((item) => (
-                  <option
-                    key={item.level}
-                    value={item.level}
-                    className="bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100"
-                  >
-                    Lvl {item.level}: {item.title} ({item.category})
+                  <option key={item.level} value={item.level} className="bg-white dark:bg-neutral-900">
+                    {item.level}. {item.title}
                   </option>
                 ))}
               </select>
@@ -221,60 +205,52 @@ export default function Game() {
               <button
                 onClick={handleNextLevel}
                 disabled={currentLevel >= 50}
-                className="px-2.5 py-1 text-xs font-semibold rounded-lg border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 hover:bg-slate-100 dark:hover:bg-white/10 disabled:opacity-40 disabled:pointer-events-none cursor-pointer transition-colors text-slate-700 dark:text-gray-200"
-                title="Next Level"
+                className="px-2.5 py-1 text-xs font-medium rounded-md border border-neutral-200 dark:border-neutral-700 hover:bg-neutral-100 dark:hover:bg-neutral-800 disabled:opacity-30 disabled:pointer-events-none cursor-pointer transition-colors text-neutral-600 dark:text-neutral-400"
               >
-                Next →
+                Next
               </button>
 
               <button
                 onClick={handleRetry}
-                className="px-2.5 py-1 text-xs font-semibold rounded-lg border border-blue-500/30 bg-blue-500/10 hover:bg-blue-500/20 text-blue-600 dark:text-blue-400 cursor-pointer transition-colors"
-                title="Restart Level"
+                className="px-2.5 py-1 text-xs font-medium rounded-md border border-neutral-300 dark:border-neutral-600 hover:bg-neutral-100 dark:hover:bg-neutral-800 cursor-pointer transition-colors text-neutral-600 dark:text-neutral-400"
               >
-                ↻ Restart
+                Restart
               </button>
             </div>
           </div>
 
-          {/* Beginner Instruction & Target */}
-          <div className="p-3 bg-slate-50 dark:bg-white/5 rounded-xl border border-slate-200/80 dark:border-white/10 text-xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
-            <div className="flex items-center gap-2">
-              <span className="text-base">💡</span>
-              <span className="text-slate-700 dark:text-gray-300 font-medium">
-                {levelConfig.instruction}
-              </span>
-            </div>
-            <div className="flex items-center gap-2 shrink-0">
-              <span className="px-2 py-0.5 bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 font-semibold rounded text-[11px] border border-emerald-500/20">
-                Target: {levelConfig.targetWpm} WPM • {levelConfig.targetAccuracy}% Acc
-              </span>
-            </div>
+          <div className="p-3 bg-neutral-100/60 dark:bg-neutral-900/60 rounded-md text-xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
+            <span className="text-neutral-600 dark:text-neutral-400">
+              {levelConfig.instruction}
+            </span>
+            <span className="text-neutral-500 dark:text-neutral-500 font-mono text-[11px] shrink-0">
+              Target: {levelConfig.targetWpm} WPM / {levelConfig.targetAccuracy}%
+            </span>
           </div>
         </div>
       )}
 
       {mode === 'timed' && (
-        <div className="w-full bg-white/80 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-2xl p-4 sm:p-5 shadow-xs transition-colors flex flex-wrap items-center justify-between gap-3">
+        <div className="w-full border border-neutral-200 dark:border-neutral-800 rounded-lg p-4 sm:p-5 flex flex-wrap items-center justify-between gap-3">
           <div>
-            <h2 className="text-lg sm:text-xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
-              <span>⏱️</span> Timed Speed Test ({timedDuration}s)
+            <h2 className="text-lg font-semibold text-neutral-900 dark:text-neutral-100">
+              Speed Test — {timedDuration}s
             </h2>
-            <p className="text-xs text-slate-500 dark:text-gray-400 mt-0.5">
-              Type as many words as you can before the clock expires!
+            <p className="text-xs text-neutral-500 dark:text-neutral-500 mt-0.5">
+              Type as fast as you can before time runs out.
             </p>
           </div>
 
           <div className="flex items-center gap-2">
-            <div className="flex items-center bg-slate-100 dark:bg-white/5 p-1 rounded-xl border border-slate-200 dark:border-white/10">
+            <div className="flex items-center border border-neutral-200 dark:border-neutral-700 rounded-md overflow-hidden">
               {TIMED_DURATIONS.map((dur) => (
                 <button
                   key={dur}
                   onClick={() => handleSelectTimedDuration(dur)}
-                  className={`px-2.5 py-1 text-xs font-semibold rounded-lg transition-all cursor-pointer ${
+                  className={`px-3 py-1.5 text-xs font-medium transition-colors cursor-pointer ${
                     timedDuration === dur
-                      ? 'bg-blue-600 text-white shadow-xs'
-                      : 'text-slate-600 dark:text-gray-300 hover:text-slate-900 dark:hover:text-white'
+                      ? 'bg-neutral-900 dark:bg-neutral-100 text-white dark:text-neutral-900'
+                      : 'text-neutral-500 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-800'
                   }`}
                 >
                   {dur}s
@@ -284,44 +260,44 @@ export default function Game() {
 
             <button
               onClick={handleRetry}
-              className="px-3 py-1.5 text-xs font-semibold rounded-xl border border-blue-500/30 bg-blue-500/10 hover:bg-blue-500/20 text-blue-600 dark:text-blue-400 cursor-pointer transition-colors"
+              className="px-3 py-1.5 text-xs font-medium rounded-md border border-neutral-200 dark:border-neutral-700 hover:bg-neutral-100 dark:hover:bg-neutral-800 cursor-pointer transition-colors text-neutral-600 dark:text-neutral-400"
             >
-              ↻ New Words
+              New Words
             </button>
           </div>
         </div>
       )}
 
       {mode === 'custom' && (
-        <div className="w-full bg-white/80 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-2xl p-4 sm:p-5 shadow-xs transition-colors flex flex-wrap items-center justify-between gap-3">
+        <div className="w-full border border-neutral-200 dark:border-neutral-800 rounded-lg p-4 sm:p-5 flex flex-wrap items-center justify-between gap-3">
           <div>
-            <h2 className="text-lg sm:text-xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
-              <span>📝</span> Custom Text Practice
+            <h2 className="text-lg font-semibold text-neutral-900 dark:text-neutral-100">
+              Custom Text
             </h2>
-            <p className="text-xs text-slate-500 dark:text-gray-400 mt-0.5">
-              {customText.trim().split(/\s+/).length} words • {customText.length} characters •{' '}
-              {customTimeLimit > 0 ? `${customTimeLimit}s limit` : 'No time limit'}
+            <p className="text-xs text-neutral-500 dark:text-neutral-500 mt-0.5">
+              {customText.trim().split(/\s+/).length} words · {customText.length} chars ·{' '}
+              {customTimeLimit > 0 ? `${customTimeLimit}s` : 'No limit'}
             </p>
           </div>
 
           <div className="flex items-center gap-2">
             <button
               onClick={() => setIsCustomModalOpen(true)}
-              className="px-3.5 py-1.5 text-xs font-semibold rounded-xl bg-blue-600 hover:bg-blue-500 text-white shadow-xs transition-colors cursor-pointer"
+              className="px-3.5 py-1.5 text-xs font-medium rounded-md bg-neutral-900 dark:bg-neutral-100 text-white dark:text-neutral-900 hover:opacity-90 transition-opacity cursor-pointer"
             >
-              ✎ Edit / Choose Text
+              Edit Text
             </button>
             <button
               onClick={handleRetry}
-              className="px-3 py-1.5 text-xs font-semibold rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 hover:bg-slate-100 dark:hover:bg-white/10 text-slate-700 dark:text-gray-200 cursor-pointer transition-colors"
+              className="px-3 py-1.5 text-xs font-medium rounded-md border border-neutral-200 dark:border-neutral-700 hover:bg-neutral-100 dark:hover:bg-neutral-800 text-neutral-600 dark:text-neutral-400 cursor-pointer transition-colors"
             >
-              ↻ Restart
+              Restart
             </button>
           </div>
         </div>
       )}
 
-      {/* Live Stats Bar */}
+      {/* Live Stats + Typing Area + Keyboard */}
       <div className="w-full flex flex-col gap-4">
         <GameStats
           timeRemaining={timeRemaining}
@@ -335,7 +311,6 @@ export default function Game() {
           initialTime={activeInitialTime}
         />
 
-        {/* Typing Input Canvas */}
         <TypingArea
           targetText={targetText}
           typedText={typedText}
@@ -345,7 +320,6 @@ export default function Game() {
           onInput={handleInput}
         />
 
-        {/* Live Visual Keyboard */}
         <VirtualKeyboard nextChar={targetText[typedText.length] || ''} />
       </div>
 
@@ -366,7 +340,7 @@ export default function Game() {
         />
       )}
 
-      {/* Custom Text Configuration Modal */}
+      {/* Custom Text Modal */}
       <CustomTextModal
         isOpen={isCustomModalOpen}
         initialText={customText}

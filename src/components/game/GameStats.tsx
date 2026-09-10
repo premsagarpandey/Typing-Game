@@ -26,27 +26,25 @@ export default function GameStats({
   const isLesson = mode === 'lesson';
 
   return (
-    <div className="flex flex-wrap items-center justify-between gap-4 p-4 bg-white/80 dark:bg-white/10 backdrop-blur-md rounded-xl border border-slate-200 dark:border-white/20 shadow-md transition-colors">
-      {/* Mode / Level indicator */}
-      <div className="flex items-center gap-2">
-        <span className="text-xs font-semibold uppercase tracking-wider text-indigo-600 dark:text-indigo-400">
-          {isLesson ? 'Level' : mode === 'timed' ? 'Mode' : 'Custom'}
+    <div className="flex items-center justify-between gap-6 py-3 px-1 border-b border-neutral-200 dark:border-neutral-800 text-sm">
+      {/* Mode / Level */}
+      <div className="flex items-center gap-1.5">
+        <span className="text-xs text-neutral-400 dark:text-neutral-500 uppercase tracking-wider font-medium">
+          {isLesson ? 'Lvl' : mode === 'timed' ? 'Mode' : 'Custom'}
         </span>
-        <span className="text-xl font-bold text-indigo-700 dark:text-indigo-300">
-          {isLesson ? level : mode === 'timed' ? `${initialTime || 30}s Test` : 'Text'}
+        <span className="font-mono font-semibold text-neutral-900 dark:text-neutral-100">
+          {isLesson ? level : mode === 'timed' ? `${initialTime || 30}s` : '—'}
         </span>
       </div>
 
-      {/* Time Remaining */}
-      <div className="flex items-center gap-2">
-        <span className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-gray-400">
-          Time
-        </span>
+      {/* Time */}
+      <div className="flex items-center gap-1.5">
+        <span className="text-xs text-neutral-400 dark:text-neutral-500 uppercase tracking-wider font-medium">Time</span>
         <span
-          className={`text-xl font-bold ${
+          className={`font-mono font-semibold ${
             timeRemaining <= 5 && timeRemaining > 0
-              ? 'text-red-500 dark:text-red-400 animate-pulse'
-              : 'text-slate-800 dark:text-gray-100'
+              ? 'text-red-500 dark:text-red-400'
+              : 'text-neutral-900 dark:text-neutral-100'
           }`}
         >
           {timeRemaining > 0 ? `${timeRemaining}s` : '∞'}
@@ -54,41 +52,35 @@ export default function GameStats({
       </div>
 
       {/* WPM */}
-      <div className="flex items-center gap-2">
-        <span className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-gray-400">
-          WPM
-        </span>
-        <span className="text-xl font-bold text-slate-800 dark:text-gray-100">
-          {wpm}{' '}
+      <div className="flex items-center gap-1.5">
+        <span className="text-xs text-neutral-400 dark:text-neutral-500 uppercase tracking-wider font-medium">WPM</span>
+        <span className="font-mono font-semibold text-neutral-900 dark:text-neutral-100">
+          {wpm}
           {isLesson && targetWpm ? (
-            <span className="text-xs font-normal text-slate-500 dark:text-gray-400">
-              / {targetWpm}
+            <span className="text-xs font-normal text-neutral-400 dark:text-neutral-500">
+              /{targetWpm}
             </span>
           ) : null}
         </span>
       </div>
 
       {/* Accuracy */}
-      <div className="flex items-center gap-2">
-        <span className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-gray-400">
-          Accuracy
-        </span>
-        <span className="text-xl font-bold text-slate-800 dark:text-gray-100">
-          {accuracy}%{' '}
+      <div className="flex items-center gap-1.5">
+        <span className="text-xs text-neutral-400 dark:text-neutral-500 uppercase tracking-wider font-medium">Acc</span>
+        <span className="font-mono font-semibold text-neutral-900 dark:text-neutral-100">
+          {accuracy}%
           {isLesson && targetAccuracy ? (
-            <span className="text-xs font-normal text-slate-500 dark:text-gray-400">
-              / {targetAccuracy}%
+            <span className="text-xs font-normal text-neutral-400 dark:text-neutral-500">
+              /{targetAccuracy}%
             </span>
           ) : null}
         </span>
       </div>
 
       {/* Combo */}
-      <div className="flex items-center gap-2">
-        <span className="text-xs font-semibold uppercase tracking-wider text-amber-600 dark:text-amber-400">
-          Combo
-        </span>
-        <span className="text-xl font-bold text-amber-600 dark:text-amber-300">{combo}x</span>
+      <div className="flex items-center gap-1.5">
+        <span className="text-xs text-neutral-400 dark:text-neutral-500 uppercase tracking-wider font-medium">Combo</span>
+        <span className="font-mono font-semibold text-neutral-900 dark:text-neutral-100">{combo}x</span>
       </div>
     </div>
   );

@@ -47,25 +47,21 @@ export default function VirtualKeyboard({ nextChar }: VirtualKeyboardProps) {
   const lowerTarget = targetChar.toLowerCase();
 
   return (
-    <div className="w-full flex flex-col items-center gap-3 select-none pt-1 pb-3">
-      {/* Active Finger Recommendation Hint */}
+    <div className="w-full flex flex-col items-center gap-2.5 select-none pt-1 pb-3">
+      {/* Finger hint */}
       {targetChar && (
-        <div className="flex items-center gap-2 px-4 py-1.5 bg-blue-500/10 dark:bg-blue-500/15 border border-blue-500/30 rounded-full text-xs font-medium text-blue-600 dark:text-blue-300 animate-fade-in shadow-xs">
-          <span className="font-bold">👉 Next Key:</span>
-          <span className="px-2 py-0.5 bg-blue-600 text-white rounded font-mono font-bold uppercase text-xs">
-            {targetChar === ' ' ? 'Space' : targetChar}
+        <div className="text-xs text-neutral-400 dark:text-neutral-500 font-mono animate-fade-in">
+          <span className="font-medium text-neutral-600 dark:text-neutral-300">
+            {targetChar === ' ' ? 'Space' : targetChar.toUpperCase()}
           </span>
-          <span className="text-slate-400 dark:text-slate-500">•</span>
-          <span>
-            Use <strong className="text-blue-600 dark:text-blue-300">{fingerInfo.hand} Hand ({fingerInfo.finger} Finger)</strong>
-          </span>
+          {' '}— {fingerInfo.hand} {fingerInfo.finger}
         </div>
       )}
 
-      {/* Keyboard Grid */}
-      <div className="flex flex-col gap-1.5 items-center justify-center p-3 bg-white/70 dark:bg-slate-900/60 backdrop-blur-md border border-slate-200 dark:border-white/10 rounded-2xl shadow-sm">
+      {/* Keyboard */}
+      <div className="flex flex-col gap-1 items-center justify-center p-3 border border-neutral-200 dark:border-neutral-800 rounded-lg">
         {KEYBOARD_ROWS.map((row, rowIndex) => (
-          <div key={rowIndex} className="flex gap-1 sm:gap-1.5 justify-center">
+          <div key={rowIndex} className="flex gap-1 justify-center">
             {row.map((item) => {
               const isMatch =
                 lowerTarget === item.key ||
@@ -75,15 +71,15 @@ export default function VirtualKeyboard({ nextChar }: VirtualKeyboardProps) {
               return (
                 <div
                   key={item.key}
-                  className={`relative h-9 min-w-7 sm:min-w-9 px-1.5 flex flex-col items-center justify-center text-xs font-semibold rounded-lg border transition-all duration-150 ${
+                  className={`relative h-8 min-w-7 sm:min-w-8 px-1 flex flex-col items-center justify-center text-xs font-medium rounded transition-all duration-100 ${
                     isMatch
-                      ? 'bg-blue-600 text-white border-blue-300 ring-2 ring-blue-400 shadow-lg shadow-blue-500/40 scale-105 z-10 animate-pulse'
-                      : 'bg-white dark:bg-white/5 text-slate-700 dark:text-gray-300 border-slate-200 dark:border-white/10'
+                      ? 'bg-neutral-900 dark:bg-neutral-100 text-white dark:text-neutral-900 scale-105'
+                      : 'bg-neutral-100 dark:bg-neutral-800/60 text-neutral-500 dark:text-neutral-400 border border-neutral-200 dark:border-neutral-700/50'
                   }`}
                 >
-                  <span className="uppercase">{item.key}</span>
+                  <span className="uppercase font-mono text-[11px]">{item.key}</span>
                   {isHomeBump && (
-                    <span className="absolute bottom-1 w-2.5 h-0.5 bg-blue-500 dark:bg-blue-400 rounded-full" />
+                    <span className="absolute bottom-0.5 w-2 h-[1.5px] bg-neutral-400 dark:bg-neutral-500 rounded-full" />
                   )}
                 </div>
               );
@@ -91,16 +87,16 @@ export default function VirtualKeyboard({ nextChar }: VirtualKeyboardProps) {
           </div>
         ))}
 
-        {/* Space Bar Row */}
-        <div className="flex gap-1.5 justify-center w-full mt-0.5">
+        {/* Space */}
+        <div className="flex gap-1 justify-center w-full mt-0.5">
           <div
-            className={`h-9 w-52 sm:w-72 flex items-center justify-center text-xs font-semibold rounded-lg border transition-all duration-150 ${
+            className={`h-8 w-48 sm:w-64 flex items-center justify-center text-xs font-medium font-mono rounded transition-all duration-100 ${
               targetChar === ' '
-                ? 'bg-blue-600 text-white border-blue-300 ring-2 ring-blue-400 shadow-lg shadow-blue-500/40 scale-105 z-10 animate-pulse'
-                : 'bg-white dark:bg-white/5 text-slate-600 dark:text-gray-400 border-slate-200 dark:border-white/10'
+                ? 'bg-neutral-900 dark:bg-neutral-100 text-white dark:text-neutral-900 scale-[1.02]'
+                : 'bg-neutral-100 dark:bg-neutral-800/60 text-neutral-400 dark:text-neutral-500 border border-neutral-200 dark:border-neutral-700/50'
             }`}
           >
-            Space (Thumb)
+            space
           </div>
         </div>
       </div>

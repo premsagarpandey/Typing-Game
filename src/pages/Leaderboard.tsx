@@ -20,58 +20,48 @@ export default function Leaderboard() {
   return (
     <div className="max-w-lg mx-auto py-8 space-y-6">
       <div>
-        <h2 className="text-2xl font-bold text-slate-900 dark:text-white">Global Leaderboard</h2>
-        <p className="text-xs text-slate-500 dark:text-gray-400 mt-1">
-          Top verified typists from the Typlix community
+        <h2 className="text-xl font-semibold text-neutral-900 dark:text-neutral-100">Leaderboard</h2>
+        <p className="text-xs text-neutral-500 dark:text-neutral-500 mt-1">
+          Top typists from the community
         </p>
       </div>
 
       {userBest && (
-        <div className="p-4 bg-blue-500/10 border border-blue-500/30 rounded-2xl flex items-center justify-between shadow-xs">
+        <div className="p-4 border border-neutral-200 dark:border-neutral-800 rounded-lg flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <span className="w-8 h-8 rounded-full bg-blue-600 text-white font-bold text-xs flex items-center justify-center shadow-xs">
+            <span className="w-7 h-7 rounded-full bg-neutral-900 dark:bg-neutral-100 text-white dark:text-neutral-900 font-bold text-[10px] flex items-center justify-center">
               YOU
             </span>
             <div>
-              <div className="font-bold text-slate-900 dark:text-white text-sm">Your Personal Best</div>
-              <div className="text-[11px] text-slate-500 dark:text-gray-400">
-                {userBest.modeLabel || (userBest.level > 0 ? `Level ${userBest.level}` : 'Practice')} • {userBest.date}
+              <div className="font-medium text-neutral-900 dark:text-neutral-100 text-sm">Your Best</div>
+              <div className="text-[11px] text-neutral-400 dark:text-neutral-500">
+                {userBest.modeLabel || (userBest.level > 0 ? `Level ${userBest.level}` : 'Practice')} · {userBest.date}
               </div>
             </div>
           </div>
-          <div className="flex items-center gap-3 text-sm font-mono font-bold">
-            <span className="text-blue-600 dark:text-blue-400">{userBest.wpm} WPM</span>
-            <span className="text-emerald-600 dark:text-emerald-400">{userBest.accuracy}%</span>
+          <div className="flex items-center gap-4 text-sm font-mono font-medium text-neutral-700 dark:text-neutral-300">
+            <span>{userBest.wpm} wpm</span>
+            <span>{userBest.accuracy}%</span>
           </div>
         </div>
       )}
 
-      <div className="space-y-3">
+      <div className="border border-neutral-200 dark:border-neutral-800 rounded-lg overflow-hidden divide-y divide-neutral-200 dark:divide-neutral-800/60">
         {TOP_PLAYERS.map((player) => (
           <div
             key={player.rank}
-            className="flex items-center justify-between p-4 bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl hover:bg-slate-50 dark:hover:bg-white/10 shadow-sm dark:shadow-none transition-colors"
+            className="flex items-center justify-between p-4 bg-neutral-50 dark:bg-neutral-950 hover:bg-neutral-100/50 dark:hover:bg-neutral-900/50 transition-colors"
           >
             <div className="flex items-center gap-3">
-              <span
-                className={`w-7 h-7 flex items-center justify-center rounded-full text-xs font-bold ${
-                  player.rank === 1
-                    ? 'bg-amber-500/20 text-amber-600 dark:text-amber-300 border border-amber-500/40'
-                    : player.rank === 2
-                    ? 'bg-slate-300/40 dark:bg-gray-400/20 text-slate-700 dark:text-gray-200 border border-slate-400/40 dark:border-gray-400/40'
-                    : player.rank === 3
-                    ? 'bg-amber-700/20 text-amber-700 dark:text-amber-500 border border-amber-700/40'
-                    : 'bg-slate-100 dark:bg-white/5 text-slate-500 dark:text-gray-400'
-                }`}
-              >
+              <span className="w-6 h-6 flex items-center justify-center text-xs font-mono font-medium text-neutral-400 dark:text-neutral-500">
                 {player.rank}
               </span>
-              <span className="font-semibold text-slate-900 dark:text-white">{player.name}</span>
+              <span className="font-medium text-neutral-900 dark:text-neutral-100 text-sm">{player.name}</span>
             </div>
 
-            <div className="flex items-center gap-4 text-sm font-mono font-semibold">
-              <span className="text-blue-600 dark:text-blue-400">{player.wpm} WPM</span>
-              <span className="text-emerald-600 dark:text-emerald-400">{player.accuracy}%</span>
+            <div className="flex items-center gap-4 text-sm font-mono font-medium text-neutral-600 dark:text-neutral-400">
+              <span>{player.wpm} wpm</span>
+              <span>{player.accuracy}%</span>
             </div>
           </div>
         ))}
