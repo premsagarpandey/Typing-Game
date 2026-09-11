@@ -6,54 +6,7 @@ import { generateTimedWords } from '../data/words';
 import { antiCheatEngine } from '../utils/antiCheat';
 import { secureStorage, type TypingSessionRecord } from '../utils/secureStorage';
 
-let audioCtx: AudioContext | null = null;
-
-const playSound = (type: 'correct' | 'error') => {
-  if (typeof window !== 'undefined') {
-    // Fast O(1) in-memory lookup via secureStorage
-    const soundSetting = secureStorage.getItem('sound', true);
-    if (!soundSetting) return;
-  }
-
-  try {
-    if (!audioCtx) {
-      const AudioContextClass =
-        window.AudioContext ||
-        (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
-      audioCtx = new AudioContextClass();
-    }
-    if (audioCtx.state === 'suspended') {
-      audioCtx.resume().catch(() => {});
-    }
-    const oscillator = audioCtx.createOscillator();
-    const gainNode = audioCtx.createGain();
-    if (!oscillator || !gainNode) return;
-
-    oscillator.connect(gainNode);
-    gainNode.connect(audioCtx.destination);
-
-    const now = audioCtx.currentTime;
-    if (type === 'correct') {
-      oscillator.type = 'sine';
-      oscillator.frequency.setValueAtTime(800, now);
-      oscillator.frequency.exponentialRampToValueAtTime(300, now + 0.03);
-      gainNode.gain.setValueAtTime(0.2, now);
-      gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.03);
-      oscillator.start(now);
-      oscillator.stop(now + 0.03);
-    } else {
-      oscillator.type = 'triangle';
-      oscillator.frequency.setValueAtTime(200, now);
-      oscillator.frequency.exponentialRampToValueAtTime(100, now + 0.1);
-      gainNode.gain.setValueAtTime(0.3, now);
-      gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
-      oscillator.start(now);
-      oscillator.stop(now + 0.1);
-    }
-  } catch {
-    // AudioContext unavailable or blocked
-  }
-};
+import { playKeystrokeSound as playSound } from '../utils/soundEngine';
 
 export type GameStatus = 'idle' | 'playing' | 'finished' | 'passed' | 'failed';
 export type GameMode = 'lesson' | 'timed' | 'custom';

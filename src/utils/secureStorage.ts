@@ -134,6 +134,18 @@ function sanitizeAndValidate<T>(key: string, value: unknown, fallback: T): T {
     return fallback;
   }
 
+  if (key === 'soundProfile') {
+    const allowed = ['cherry-mx-blue', 'cherry-mx-red', 'cherry-mx-brown', 'creamy-thock', 'typewriter'];
+    if (typeof value === 'string' && allowed.includes(value)) return value as T;
+    return fallback;
+  }
+
+  if (key === 'soundVolume') {
+    const num = typeof value === 'number' ? value : parseInt(String(value), 10);
+    if (!Number.isFinite(num) || isNaN(num)) return fallback;
+    return Math.min(100, Math.max(0, Math.floor(num))) as T;
+  }
+
   if (key === 'typlix_stats') {
     if (!Array.isArray(value)) return fallback;
     const validRecords = value.filter(
