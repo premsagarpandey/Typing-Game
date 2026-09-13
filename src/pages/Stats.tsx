@@ -1,8 +1,11 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { secureStorage, type TypingSessionRecord } from '../utils/secureStorage';
+import { exportStatsAsCSV, exportDataAsJSON } from '../utils/dataBackup';
 
 export default function Stats() {
+  const [feedback, setFeedback] = useState<string | null>(null);
+
   const sessions = useMemo(() => {
     return secureStorage.getItem<TypingSessionRecord[]>('typlix_stats', []);
   }, []);
@@ -34,17 +37,70 @@ export default function Stats() {
     return [...sessions].reverse();
   }, [sessions]);
 
+  const handleExportCSV = () => {
+    try {
+      exportStatsAsCSV();
+      setFeedback('Stats exported to CSV!');
+      setTimeout(() => setFeedback(null), 3000);
+    } catch (e) {
+      setFeedback((e as Error).message);
+      setTimeout(() => setFeedback(null), 3000);
+    }
+  };
+
+  const handleExportJSON = () => {
+    try {
+      exportDataAsJSON();
+      setFeedback('Full backup exported to JSON!');
+      setTimeout(() => setFeedback(null), 3000);
+    } catch (e) {
+      setFeedback((e as Error).message);
+      setTimeout(() => setFeedback(null), 3000);
+    }
+  };
+
   return (
     <div className="max-w-2xl mx-auto py-8 space-y-6">
-      <div className="flex items-center justify-between">
-        <h2 className="text-xl font-semibold text-neutral-900 dark:text-neutral-100">Statistics</h2>
-        <Link
-          to="/game"
-          className="px-3 py-1.5 text-xs font-medium rounded-md bg-neutral-900 dark:bg-neutral-100 text-white dark:text-neutral-900 hover:opacity-90 transition-opacity"
-        >
-          Practice
-        </Link>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div>
+          <h2 className="text-xl font-semibold text-neutral-900 dark:text-neutral-100">Statistics</h2>
+          <p className="text-xs text-neutral-500 dark:text-neutral-500">Track your typing velocity and accuracy trends</p>
+        </div>
+
+        <div className="flex items-center gap-2">
+          {sessions.length > 0 && (
+            <div className="flex items-center gap-1.5">
+              <button
+                onClick={handleExportCSV}
+                className="px-2.5 py-1.5 text-xs font-medium rounded-md border border-neutral-300 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-900 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors cursor-pointer"
+                title="Export session data as CSV"
+              >
+                CSV Export
+              </button>
+              <button
+                onClick={handleExportJSON}
+                className="px-2.5 py-1.5 text-xs font-medium rounded-md border border-neutral-300 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-900 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors cursor-pointer"
+                title="Export full JSON backup"
+              >
+                JSON Backup
+              </button>
+            </div>
+          )}
+          <Link
+            to="/game"
+            className="px-3 py-1.5 text-xs font-medium rounded-md bg-neutral-900 dark:bg-neutral-100 text-white dark:text-neutral-900 hover:opacity-90 transition-opacity"
+          >
+            Practice
+          </Link>
+        </div>
       </div>
+
+      {feedback && (
+        <div className="p-2.5 text-xs rounded-md bg-neutral-900 dark:bg-neutral-100 text-white dark:text-neutral-900 font-medium animate-fade-in flex items-center justify-between">
+          <span>{feedback}</span>
+          <button onClick={() => setFeedback(null)} className="cursor-pointer opacity-70 hover:opacity-100">✕</button>
+        </div>
+      )}
 
       {/* Summary Cards */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-px bg-neutral-200 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-800 rounded-lg overflow-hidden">

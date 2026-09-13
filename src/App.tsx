@@ -7,6 +7,7 @@ import Stats from './pages/Stats';
 import Leaderboard from './pages/Leaderboard';
 import Settings from './pages/Settings';
 import ErrorBoundary from './components/common/ErrorBoundary';
+import PwaInstallBanner from './components/common/PwaInstallBanner';
 import { initDevToolsSecurityWarning } from './utils/security';
 import { ThemeProvider } from './context/ThemeContext';
 
@@ -34,6 +35,7 @@ export default function App() {
             <footer className="w-full py-5 text-center text-xs text-neutral-500 dark:text-neutral-600 border-t border-neutral-200 dark:border-neutral-800/60 max-w-4xl mx-auto px-5 sm:px-8">
               <span>© {new Date().getFullYear()} Typlix</span>
             </footer>
+            <PwaInstallBanner />
           </div>
         </Router>
       </ThemeProvider>

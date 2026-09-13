@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useLocalStorage } from '../../hooks/useLocalStorage';
+import { getKeyboardLayout, type KeyboardLayoutId } from '../../data/keyboardLayouts';
 
 interface FingerPlacementModalProps {
   isOpen: boolean;
@@ -16,6 +18,8 @@ export default function FingerPlacementModal({
 }: FingerPlacementModalProps) {
   const navigate = useNavigate();
   const [timeLeft, setTimeLeft] = useState(durationSeconds);
+  const [layoutId] = useLocalStorage<KeyboardLayoutId>('keyboardLayout', 'qwerty');
+  const layout = getKeyboardLayout(layoutId);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -73,11 +77,16 @@ export default function FingerPlacementModal({
           ✕
         </button>
 
+        <div className="inline-flex items-center gap-1 px-2 py-0.5 mb-2 rounded text-[10px] uppercase font-mono font-medium bg-neutral-200/70 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300">
+          {layout.name} Layout
+        </div>
+
         <h2 className="text-lg font-semibold text-neutral-900 dark:text-neutral-100 mb-1">
           Position Your Fingers
         </h2>
         <p className="text-xs text-neutral-500 dark:text-neutral-500 mb-4">
-          Left hand on <span className="font-mono font-medium">A S D F</span> — Right hand on <span className="font-mono font-medium">J K L ;</span>
+          Left: <span className="font-mono font-medium">{layout.homeRowLeft.join(' ')}</span> — Right:{' '}
+          <span className="font-mono font-medium">{layout.homeRowRight.join(' ')}</span>
         </p>
 
         {/* Finger image */}
@@ -92,15 +101,26 @@ export default function FingerPlacementModal({
         {/* Key Reference */}
         <div className="w-full grid grid-cols-2 gap-2 text-xs mb-4">
           <div className="flex items-center justify-between px-3 py-2 border border-neutral-200 dark:border-neutral-800 rounded-md">
-            <span className="text-neutral-500 dark:text-neutral-500">Left</span>
-            <div className="flex gap-1 font-mono font-medium text-neutral-700 dark:text-neutral-300">
-              <span>A</span><span>S</span><span>D</span><span className="underline">F</span>
+            <span className="text-neutral-500 dark:text-neutral-500">Left Hand</span>
+            <div className="flex gap-1.5 font-mono font-medium text-neutral-700 dark:text-neutral-300">
+              {layout.homeRowLeft.map((k, idx) => (
+                <span
+                  key={k}
+                  className={idx === layout.homeRowLeft.length - 1 ? 'underline font-bold' : ''}
+                >
+                  {k}
+                </span>
+              ))}
             </div>
           </div>
           <div className="flex items-center justify-between px-3 py-2 border border-neutral-200 dark:border-neutral-800 rounded-md">
-            <span className="text-neutral-500 dark:text-neutral-500">Right</span>
-            <div className="flex gap-1 font-mono font-medium text-neutral-700 dark:text-neutral-300">
-              <span className="underline">J</span><span>K</span><span>L</span><span>;</span>
+            <span className="text-neutral-500 dark:text-neutral-500">Right Hand</span>
+            <div className="flex gap-1.5 font-mono font-medium text-neutral-700 dark:text-neutral-300">
+              {layout.homeRowRight.map((k, idx) => (
+                <span key={k} className={idx === 0 ? 'underline font-bold' : ''}>
+                  {k}
+                </span>
+              ))}
             </div>
           </div>
         </div>
