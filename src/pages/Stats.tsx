@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { secureStorage, type TypingSessionRecord } from '../utils/secureStorage';
 import { exportStatsAsCSV, exportDataAsJSON } from '../utils/dataBackup';
+import WpmProgressChart from '../components/stats/WpmProgressChart';
 
 export default function Stats() {
   const [feedback, setFeedback] = useState<string | null>(null);
@@ -132,6 +133,9 @@ export default function Stats() {
           </div>
         </div>
       </div>
+
+      {/* WPM Progress Chart */}
+      <WpmProgressChart sessions={sessions} />
 
       {/* Session History Table */}
       <div className="overflow-hidden rounded-lg border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-950">

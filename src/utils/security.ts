@@ -1,6 +1,6 @@
 /**
  * Typlix Core Security Utilities
- * Includes XSS sanitization, DevTools defense warnings, and prototype freezing.
+ * Includes prototype freezing and frameguard defense.
  */
 
 /**
@@ -18,56 +18,17 @@ export function deepFreeze<T extends object>(obj: T): Readonly<T> {
 }
 
 /**
- * Logs a high-visibility security warning in browser DevTools to prevent Self-XSS attacks
+ * Clickjack defense fallback (CSP frame-ancestors is primary)
  */
 export function initDevToolsSecurityWarning(): void {
   if (typeof window === 'undefined') return;
 
-  // Frameguard clickjack defense fallback (CSP frame-ancestors is primary)
   try {
     if (window.self !== window.top && window.top) {
-      // Safe check without leaking cross-origin exceptions
       window.top.location.replace(window.self.location.href);
     }
   } catch {
     // Cross-origin iframe environment handled by CSP
   }
-
-  // Console Security Warning
-  const bannerStyle = `
-    color: #ef4444;
-    font-size: 28px;
-    font-weight: 900;
-    text-shadow: 2px 2px 0px #000;
-    padding: 8px;
-  `;
-
-  const bodyStyle = `
-    color: #f3f4f6;
-    font-size: 14px;
-    font-weight: 500;
-    line-height: 1.5;
-  `;
-
-  const cautionStyle = `
-    color: #f59e0b;
-    font-size: 13px;
-    font-weight: 600;
-  `;
-
-  setTimeout(() => {
-    try {
-      console.log('%c🛑 TYPLIX SECURITY NOTICE', bannerStyle);
-      console.log(
-        '%cThis browser feature is intended for developers. Pasting untrusted scripts or commands here may compromise your session, corrupt local game progress, or violate anti-cheat policies.',
-        bodyStyle
-      );
-      console.log(
-        '%c🛡️ Anti-Tamper & Cryptographic Checksums are active.',
-        cautionStyle
-      );
-    } catch {
-      // Ignore
-    }
-  }, 500);
 }
+
