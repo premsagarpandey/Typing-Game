@@ -68,6 +68,30 @@ html.light body {
   font-family: 'JetBrains Mono', 'Fira Code', monospace;
 }
 
+/* ═══════════════════ Typing Area – 3-line scroller ═══════════════════ */
+
+/* Light mode defaults */
+.typing-area-container {
+  --typing-area-bg: #ffffff;
+  --caret-color: #171717;
+}
+
+/* Dark mode */
+.dark .typing-area-container {
+  --typing-area-bg: rgba(23, 23, 23, 0.6);
+  --caret-color: #f5f5f5;
+}
+
+/* Smooth caret blink */
+@keyframes caretBlink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+
+.typing-caret {
+  animation: caretBlink 1s ease-in-out infinite;
+}
+
 /* ═══════════════════ Volume Slider ═══════════════════ */
 
 .volume-slider {
