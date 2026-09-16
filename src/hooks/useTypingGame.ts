@@ -3,18 +3,27 @@ import { calculateWPM, calculateAccuracy } from '../utils/calculations';
 import { generateLevelText } from '../data/levels';
 import type { LevelConfig } from '../data/levels';
 import { generateTimedWords } from '../data/words';
+import { getRandomQuote } from '../data/quotes';
+import type { QuoteCategory } from '../data/quotes';
+import { getRandomSnippet } from '../data/codeSnippets';
+import type { CodeLanguage } from '../data/codeSnippets';
+import type { Difficulty } from '../data/quotes';
 import { antiCheatEngine } from '../utils/antiCheat';
 import { secureStorage, type TypingSessionRecord } from '../utils/secureStorage';
 
 import { playKeystrokeSound as playSound } from '../utils/soundEngine';
 
 export type GameStatus = 'idle' | 'playing' | 'finished' | 'passed' | 'failed';
-export type GameMode = 'lesson' | 'timed' | 'custom';
+export type GameMode = 'lesson' | 'timed' | 'custom' | 'quotes' | 'code';
 
 export interface GameOptions {
   mode?: GameMode;
   customText?: string;
   modeLabel?: string;
+  quoteCategory?: QuoteCategory | null;
+  quoteDifficulty?: Difficulty | null;
+  codeLanguage?: CodeLanguage | null;
+  codeDifficulty?: Difficulty | null;
 }
 
 export function useTypingGame(
@@ -25,6 +34,10 @@ export function useTypingGame(
   const currentMode = options?.mode || 'lesson';
   const customText = options?.customText || '';
   const modeLabel = options?.modeLabel;
+  const quoteCategory = options?.quoteCategory;
+  const quoteDifficulty = options?.quoteDifficulty;
+  const codeLanguage = options?.codeLanguage;
+  const codeDifficulty = options?.codeDifficulty;
 
   const actualInitialTime = useMemo(() => {
     if (currentMode === 'lesson') {
@@ -40,6 +53,10 @@ export function useTypingGame(
       return levelConfig ? generateLevelText(levelConfig, 25) : '';
     } else if (currentMode === 'custom') {
       return customText.trim() || 'Type something here...';
+    } else if (currentMode === 'quotes') {
+      return getRandomQuote(quoteCategory, quoteDifficulty).text;
+    } else if (currentMode === 'code') {
+      return getRandomSnippet(codeLanguage, codeDifficulty).code;
     } else {
       return generateTimedWords(60);
     }
@@ -245,11 +262,15 @@ export function useTypingGame(
       } else if (mode === 'custom') {
         const textToUse = newCustomText !== undefined ? newCustomText : customText;
         setTargetText(textToUse.trim() || 'Type something here...');
+      } else if (mode === 'quotes') {
+        setTargetText(getRandomQuote(quoteCategory, quoteDifficulty).text);
+      } else if (mode === 'code') {
+        setTargetText(getRandomSnippet(codeLanguage, codeDifficulty).code);
       } else {
         setTargetText(generateTimedWords(60));
       }
     },
-    [actualInitialTime, customText]
+    [actualInitialTime, customText, quoteCategory, quoteDifficulty, codeLanguage, codeDifficulty]
   );
 
   return {

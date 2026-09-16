@@ -39,6 +39,8 @@ export default function ResultsModal({
         : 'Keep Practicing';
     }
     if (mode === 'timed') return 'Test Complete';
+    if (mode === 'quotes') return 'Quote Complete';
+    if (mode === 'code') return 'Snippet Complete';
     return 'Practice Complete';
   };
 
@@ -52,6 +54,8 @@ export default function ResultsModal({
     if (mode === 'timed') {
       return `Results for your ${modeLabel || 'timed'} session.`;
     }
+    if (mode === 'quotes') return 'Great job! Ready for the next quote?';
+    if (mode === 'code') return 'Nice! Practice more code to improve symbol speed.';
     return 'You finished typing the custom text.';
   };
 
@@ -135,7 +139,7 @@ export default function ResultsModal({
             onClick={onRetry}
             className="flex-1 py-2.5 px-4 bg-neutral-900 dark:bg-neutral-100 text-white dark:text-neutral-900 font-medium rounded-md text-sm cursor-pointer flex items-center justify-center gap-2 hover:opacity-90 transition-opacity"
           >
-            Next
+            {mode === 'quotes' ? 'Next Quote' : mode === 'code' ? 'Next Snippet' : 'Next'}
             <kbd className="px-1.5 py-0.5 text-[10px] font-mono bg-white/20 dark:bg-neutral-900/20 rounded">
               ↵
             </kbd>

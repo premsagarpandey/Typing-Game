@@ -109,7 +109,7 @@ export interface TypingSessionRecord {
   maxCombo: number;
   date: string;
   passed: boolean;
-  mode?: 'lesson' | 'timed' | 'custom';
+  mode?: 'lesson' | 'timed' | 'custom' | 'quotes' | 'code';
   modeLabel?: string;
 }
 
