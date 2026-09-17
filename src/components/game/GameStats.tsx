@@ -30,10 +30,10 @@ export default function GameStats({
       {/* Mode / Level */}
       <div className="flex items-center gap-1.5">
         <span className="text-xs text-neutral-400 dark:text-neutral-500 uppercase tracking-wider font-medium">
-          {isLesson ? 'Lvl' : mode === 'timed' ? 'Mode' : 'Custom'}
+          {isLesson ? 'Lvl' : mode === 'timed' ? 'Mode' : mode === 'quotes' ? 'Quote' : mode === 'code' ? 'Code' : 'Custom'}
         </span>
         <span className="font-mono font-semibold text-neutral-900 dark:text-neutral-100">
-          {isLesson ? level : mode === 'timed' ? `${initialTime || 30}s` : '—'}
+          {isLesson ? level : mode === 'timed' ? `${initialTime || 30}s` : mode === 'quotes' ? '💬' : mode === 'code' ? '⌨' : '✏'}
         </span>
       </div>
 

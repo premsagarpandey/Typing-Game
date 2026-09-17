@@ -1,4 +1,5 @@
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
+import { useSearchParams, Link } from 'react-router-dom';
 import { useTypingGame, type GameMode } from '../hooks/useTypingGame';
 import GameStats from '../components/game/GameStats';
 import TypingArea from '../components/game/TypingArea';
@@ -26,6 +27,7 @@ const TIMED_DURATIONS = [15, 30, 60, 120];
 const DIFFICULTIES: (Difficulty | null)[] = [null, 'easy', 'medium', 'hard'];
 
 export default function Game() {
+  const [searchParams] = useSearchParams();
   const [mode, setMode] = useLocalStorage<GameMode>('typlix_game_mode', 'lesson');
   const [currentLevel, setCurrentLevel] = useLocalStorage<number>('typingGameLevel', 1);
   const [timedDuration, setTimedDuration] = useLocalStorage<number>('typlix_timed_duration', 30);
@@ -109,13 +111,25 @@ export default function Game() {
     codeDifficulty,
   });
 
-  // Switch game mode
-  const handleSwitchMode = (newMode: GameMode) => {
-    setMode(newMode);
-    setTimeout(() => {
+  // Synchronize mode from URL search param if present (e.g. /game?mode=quotes)
+  useEffect(() => {
+    const urlMode = searchParams.get('mode') as GameMode | null;
+    if (urlMode && ['lesson', 'timed', 'quotes', 'code', 'custom'].includes(urlMode)) {
+      if (urlMode !== mode) {
+        setMode(urlMode);
+      }
+    }
+  }, [searchParams, mode, setMode]);
+
+  // When active mode changes, reset game with appropriate text
+  const prevModeRef = useRef(mode);
+  useEffect(() => {
+    if (prevModeRef.current !== mode) {
+      prevModeRef.current = mode;
       resetGame();
-    }, 0);
-  };
+    }
+  }, [mode, resetGame]);
+
 
   // Switch timed duration
   const handleSelectTimedDuration = (dur: number) => {
@@ -225,56 +239,33 @@ export default function Game() {
 
   return (
     <div className="flex flex-col items-center justify-center min-h-[75vh] w-full max-w-3xl mx-auto gap-5 py-2">
-      {/* Mode Switcher */}
-      <div className="w-full flex items-center justify-center">
-        <div className="flex items-center border-b border-neutral-200 dark:border-neutral-800 overflow-x-auto">
-          {(['lesson', 'timed', 'quotes', 'code', 'custom'] as GameMode[]).map((m) => {
-            const labels: Record<GameMode, string> = {
-              lesson: 'Lessons',
-              timed: 'Timed',
-              quotes: 'Quotes',
-              code: 'Code',
-              custom: 'Custom',
-            };
-            const icons: Record<GameMode, string> = {
-              lesson: '📖',
-              timed: '⏱',
-              quotes: '💬',
-              code: '⌨',
-              custom: '✏',
-            };
-            return (
-              <button
-                key={m}
-                onClick={() => handleSwitchMode(m)}
-                className={`px-3 sm:px-4 py-2 text-sm font-medium transition-colors cursor-pointer border-b-2 -mb-px whitespace-nowrap flex items-center gap-1.5 ${
-                  mode === m
-                    ? 'border-neutral-900 dark:border-neutral-100 text-neutral-900 dark:text-neutral-100'
-                    : 'border-transparent text-neutral-400 dark:text-neutral-500 hover:text-neutral-700 dark:hover:text-neutral-300'
-                }`}
-              >
-                <span className="text-xs">{icons[m]}</span>
-                {labels[m]}
-              </button>
-            );
-          })}
-        </div>
-      </div>
-
       {/* Mode Specific Controls */}
       {mode === 'lesson' && (
         <div className="w-full border border-neutral-200 dark:border-neutral-800 rounded-lg p-4 sm:p-5 space-y-3">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
-              <span className="text-xs text-neutral-400 dark:text-neutral-500 font-medium uppercase tracking-wider">
-                {levelConfig.category}
-              </span>
+              <div className="flex items-center gap-2 mb-0.5">
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold uppercase tracking-wider bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800/60">
+                  📖 Lesson
+                </span>
+                <span className="text-xs text-neutral-400 dark:text-neutral-500 font-medium uppercase tracking-wider">
+                  {levelConfig.category}
+                </span>
+              </div>
               <h2 className="text-lg font-semibold text-neutral-900 dark:text-neutral-100">
                 Level {currentLevel}: {levelConfig.title}
               </h2>
             </div>
 
             <div className="flex items-center gap-1.5">
+              <Link
+                to="/"
+                className="px-2.5 py-1 text-xs font-medium rounded-md border border-neutral-200 dark:border-neutral-700 hover:bg-neutral-100 dark:hover:bg-neutral-800 text-neutral-500 dark:text-neutral-400 cursor-pointer transition-colors"
+                title="Back to Home to switch modes"
+              >
+                ← Modes
+              </Link>
+
               <button
                 onClick={handlePrevLevel}
                 disabled={currentLevel <= 1}
@@ -327,6 +318,11 @@ export default function Game() {
       {mode === 'timed' && (
         <div className="w-full border border-neutral-200 dark:border-neutral-800 rounded-lg p-4 sm:p-5 flex flex-wrap items-center justify-between gap-3">
           <div>
+            <div className="flex items-center gap-2 mb-0.5">
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold uppercase tracking-wider bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800/60">
+                ⏱ Timed
+              </span>
+            </div>
             <h2 className="text-lg font-semibold text-neutral-900 dark:text-neutral-100">
               Speed Test — {timedDuration}s
             </h2>
@@ -336,6 +332,14 @@ export default function Game() {
           </div>
 
           <div className="flex items-center gap-2">
+            <Link
+              to="/"
+              className="px-3 py-1.5 text-xs font-medium rounded-md border border-neutral-200 dark:border-neutral-700 hover:bg-neutral-100 dark:hover:bg-neutral-800 text-neutral-500 dark:text-neutral-400 cursor-pointer transition-colors"
+              title="Back to Home to switch modes"
+            >
+              ← Modes
+            </Link>
+
             <div className="flex items-center border border-neutral-200 dark:border-neutral-700 rounded-md overflow-hidden">
               {TIMED_DURATIONS.map((dur) => (
                 <button
@@ -386,6 +390,13 @@ export default function Game() {
             </div>
 
             <div className="flex items-center gap-2">
+              <Link
+                to="/"
+                className="px-3 py-1.5 text-xs font-medium rounded-md border border-neutral-200 dark:border-neutral-700 hover:bg-neutral-100 dark:hover:bg-neutral-800 text-neutral-500 dark:text-neutral-400 cursor-pointer transition-colors"
+                title="Back to Home to switch modes"
+              >
+                ← Modes
+              </Link>
               <button
                 onClick={handleRetry}
                 className="px-3.5 py-1.5 text-xs font-medium rounded-md bg-neutral-900 dark:bg-neutral-100 text-white dark:text-neutral-900 hover:opacity-90 transition-opacity cursor-pointer"
@@ -477,6 +488,13 @@ export default function Game() {
             </div>
 
             <div className="flex items-center gap-2">
+              <Link
+                to="/"
+                className="px-3 py-1.5 text-xs font-medium rounded-md border border-neutral-200 dark:border-neutral-700 hover:bg-neutral-100 dark:hover:bg-neutral-800 text-neutral-500 dark:text-neutral-400 cursor-pointer transition-colors"
+                title="Back to Home to switch modes"
+              >
+                ← Modes
+              </Link>
               <button
                 onClick={handleRetry}
                 className="px-3.5 py-1.5 text-xs font-medium rounded-md bg-neutral-900 dark:bg-neutral-100 text-white dark:text-neutral-900 hover:opacity-90 transition-opacity cursor-pointer"
@@ -547,6 +565,11 @@ export default function Game() {
       {mode === 'custom' && (
         <div className="w-full border border-neutral-200 dark:border-neutral-800 rounded-lg p-4 sm:p-5 flex flex-wrap items-center justify-between gap-3">
           <div>
+            <div className="flex items-center gap-2 mb-0.5">
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold uppercase tracking-wider bg-purple-100 dark:bg-purple-900/40 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-800/60">
+                ✏ Custom
+              </span>
+            </div>
             <h2 className="text-lg font-semibold text-neutral-900 dark:text-neutral-100">
               Custom Text
             </h2>
@@ -557,6 +580,13 @@ export default function Game() {
           </div>
 
           <div className="flex items-center gap-2">
+            <Link
+              to="/"
+              className="px-3 py-1.5 text-xs font-medium rounded-md border border-neutral-200 dark:border-neutral-700 hover:bg-neutral-100 dark:hover:bg-neutral-800 text-neutral-500 dark:text-neutral-400 cursor-pointer transition-colors"
+              title="Back to Home to switch modes"
+            >
+              ← Modes
+            </Link>
             <button
               onClick={() => setIsCustomModalOpen(true)}
               className="px-3.5 py-1.5 text-xs font-medium rounded-md bg-neutral-900 dark:bg-neutral-100 text-white dark:text-neutral-900 hover:opacity-90 transition-opacity cursor-pointer"
