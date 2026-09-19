@@ -20,17 +20,17 @@ export default function VirtualKeyboard({ nextChar, showLayoutPicker = true }: V
   const lowerTarget = targetChar.toLowerCase();
 
   return (
-    <div className="w-full flex flex-col items-center gap-2 select-none pt-1 pb-2">
+    <div className="w-full flex flex-col items-center gap-1.5 select-none pt-0.5 pb-1">
       {/* Top Header: Finger hint + Layout Indicator */}
-      <div className="w-full flex items-center justify-between px-1 max-w-lg">
+      <div className="w-full flex items-center justify-between px-1 max-w-xl">
         {/* Finger hint */}
-        <div className="text-xs text-neutral-400 dark:text-neutral-500 font-mono">
+        <div className="text-xs sm:text-sm text-neutral-400 dark:text-neutral-500 font-mono">
           {targetChar ? (
-            <span className="animate-fade-in inline-flex items-center gap-1.5">
-              <span className="px-1.5 py-0.5 rounded bg-neutral-200 dark:bg-neutral-800 text-neutral-800 dark:text-neutral-200 font-semibold">
+            <span className="animate-fade-in inline-flex items-center gap-2">
+              <span className="px-2 py-0.5 rounded-md bg-neutral-200 dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 font-bold font-mono text-xs">
                 {targetChar === ' ' ? '␣ Space' : targetChar}
               </span>
-              <span className="text-neutral-500 dark:text-neutral-400">
+              <span className="text-neutral-600 dark:text-neutral-300 font-medium">
                 — {fingerInfo.hand} {fingerInfo.finger}
               </span>
             </span>
@@ -41,15 +41,15 @@ export default function VirtualKeyboard({ nextChar, showLayoutPicker = true }: V
 
         {/* Layout quick switcher */}
         {showLayoutPicker && (
-          <div className="flex items-center gap-1">
-            <span className="text-[11px] text-neutral-400 dark:text-neutral-600 font-medium">Layout:</span>
-            <div className="inline-flex rounded-md border border-neutral-200 dark:border-neutral-800 p-0.5 bg-neutral-100/60 dark:bg-neutral-900/60">
+          <div className="flex items-center gap-1.5">
+            <span className="text-xs text-neutral-400 dark:text-neutral-500 font-medium">Layout:</span>
+            <div className="inline-flex rounded-lg border border-neutral-200 dark:border-neutral-800 p-0.5 bg-neutral-100/70 dark:bg-neutral-900/70">
               {(Object.keys(KEYBOARD_LAYOUTS) as KeyboardLayoutId[]).map((id) => (
                 <button
                   key={id}
                   type="button"
                   onClick={() => setLayoutId(id)}
-                  className={`px-1.5 py-0.5 text-[10px] uppercase font-mono font-medium rounded transition-all cursor-pointer ${
+                  className={`px-2 py-1 text-[11px] uppercase font-mono font-medium rounded-md transition-all cursor-pointer ${
                     layoutId === id
                       ? 'bg-neutral-900 dark:bg-neutral-100 text-white dark:text-neutral-900 shadow-xs'
                       : 'text-neutral-500 dark:text-neutral-400 hover:text-neutral-800 dark:hover:text-neutral-200'
@@ -65,9 +65,9 @@ export default function VirtualKeyboard({ nextChar, showLayoutPicker = true }: V
       </div>
 
       {/* Keyboard Matrix */}
-      <div className="flex flex-col gap-1 items-center justify-center p-3 border border-neutral-200 dark:border-neutral-800 rounded-lg bg-neutral-50/50 dark:bg-neutral-900/40 backdrop-blur-xs">
+      <div className="flex flex-col gap-1 sm:gap-1.5 items-center justify-center p-2.5 sm:p-3.5 border border-neutral-200 dark:border-neutral-800 rounded-xl bg-neutral-50/70 dark:bg-neutral-900/50 backdrop-blur-xs shadow-2xs">
         {layout.rows.map((row, rowIndex) => (
-          <div key={rowIndex} className="flex gap-1 justify-center">
+          <div key={rowIndex} className="flex gap-1 sm:gap-1.5 justify-center">
             {row.map((item) => {
               const isMatch =
                 lowerTarget === item.key.toLowerCase() ||
@@ -77,22 +77,22 @@ export default function VirtualKeyboard({ nextChar, showLayoutPicker = true }: V
               return (
                 <div
                   key={`${item.key}-${item.shift || ''}`}
-                  className={`relative h-8 min-w-7 sm:min-w-8 px-1 flex flex-col items-center justify-center text-xs font-medium rounded transition-all duration-100 ${
+                  className={`relative h-8 sm:h-9 min-w-7 sm:min-w-8.5 md:min-w-9 px-1 sm:px-1.5 flex flex-col items-center justify-center font-medium rounded-lg transition-all duration-100 ${
                     isMatch
-                      ? 'bg-neutral-900 dark:bg-neutral-100 text-white dark:text-neutral-900 scale-105 shadow-sm ring-2 ring-neutral-400 dark:ring-neutral-500'
-                      : 'bg-neutral-100 dark:bg-neutral-800/60 text-neutral-600 dark:text-neutral-300 border border-neutral-200 dark:border-neutral-700/50'
+                      ? 'bg-neutral-900 dark:bg-neutral-100 text-white dark:text-neutral-900 scale-105 shadow-md ring-2 ring-neutral-400 dark:ring-neutral-400 z-10'
+                      : 'bg-white dark:bg-neutral-800/80 text-neutral-700 dark:text-neutral-200 border border-neutral-200/90 dark:border-neutral-700/60 shadow-2xs'
                   }`}
                 >
                   {item.shift && (
-                    <span className="font-mono text-[9px] text-neutral-400 dark:text-neutral-500 -mb-1">
+                    <span className="font-mono text-[9px] sm:text-[10px] text-neutral-400 dark:text-neutral-500 -mb-0.5 leading-none">
                       {item.shift}
                     </span>
                   )}
-                  <span className="uppercase font-mono text-[11px] leading-none">
+                  <span className="uppercase font-mono text-xs sm:text-[13px] font-semibold leading-none">
                     {item.key}
                   </span>
                   {isHomeBump && (
-                    <span className="absolute bottom-0.5 w-2 h-[1.5px] bg-neutral-400 dark:bg-neutral-500 rounded-full" />
+                    <span className="absolute bottom-1 w-2.5 h-[2px] bg-neutral-400 dark:bg-neutral-500 rounded-full" />
                   )}
                 </div>
               );
@@ -101,12 +101,12 @@ export default function VirtualKeyboard({ nextChar, showLayoutPicker = true }: V
         ))}
 
         {/* Space bar */}
-        <div className="flex gap-1 justify-center w-full mt-0.5">
+        <div className="flex gap-1 sm:gap-1.5 justify-center w-full mt-0.5">
           <div
-            className={`h-8 w-48 sm:w-64 flex items-center justify-center text-xs font-medium font-mono rounded transition-all duration-100 ${
+            className={`h-8 sm:h-9 w-52 sm:w-64 md:w-72 flex items-center justify-center text-xs sm:text-sm font-medium font-mono rounded-lg transition-all duration-100 ${
               targetChar === ' '
-                ? 'bg-neutral-900 dark:bg-neutral-100 text-white dark:text-neutral-900 scale-[1.02] shadow-sm ring-2 ring-neutral-400 dark:ring-neutral-500'
-                : 'bg-neutral-100 dark:bg-neutral-800/60 text-neutral-400 dark:text-neutral-500 border border-neutral-200 dark:border-neutral-700/50'
+                ? 'bg-neutral-900 dark:bg-neutral-100 text-white dark:text-neutral-900 scale-[1.02] shadow-md ring-2 ring-neutral-400 dark:ring-neutral-400'
+                : 'bg-white dark:bg-neutral-800/80 text-neutral-400 dark:text-neutral-500 border border-neutral-200/90 dark:border-neutral-700/60 shadow-2xs'
             }`}
           >
             space

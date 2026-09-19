@@ -26,7 +26,7 @@ export default function GameStats({
   const isLesson = mode === 'lesson';
 
   return (
-    <div className="flex items-center justify-between gap-6 py-3 px-1 border-b border-neutral-200 dark:border-neutral-800 text-sm">
+    <div className="flex items-center justify-between gap-6 py-2 px-1 border-b border-neutral-200 dark:border-neutral-800 text-sm">
       {/* Mode / Level */}
       <div className="flex items-center gap-1.5">
         <span className="text-xs text-neutral-400 dark:text-neutral-500 uppercase tracking-wider font-medium">

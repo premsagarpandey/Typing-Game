@@ -134,7 +134,7 @@ export default function TypingArea({
   const tokens = useMemo(() => tokenize(targetText), [targetText]);
 
   // Compute font metrics – match the monospace font set in CSS
-  const fontSize = typeof window !== 'undefined' && window.innerWidth >= 640 ? 24 : 20;
+  const fontSize = typeof window !== 'undefined' && window.innerWidth >= 1024 ? 30 : window.innerWidth >= 640 ? 26 : 20;
   const fontFamily = "'JetBrains Mono', 'Fira Code', monospace";
 
   // Break tokens into visual lines
@@ -166,7 +166,7 @@ export default function TypingArea({
   }, [activeLineIndex]);
 
   // Line height in px – we use this for the scroll transform
-  const lineHeightPx = fontSize * 2; // ~2em for comfortable spacing
+  const lineHeightPx = Math.round(fontSize * 1.85); // comfortable, modern monospace line height
 
   // Focus handler
   const handleContainerClick = useCallback(() => {
@@ -184,13 +184,13 @@ export default function TypingArea({
       <motion.div
         ref={containerRef}
         animate={controls}
-        className={`typing-area-container relative p-6 sm:p-8 rounded-xl border ${
+        className={`typing-area-container relative p-5 sm:p-7 rounded-2xl border-2 ${
           securityFlag
             ? 'border-red-400/50 dark:border-red-500/30'
             : 'border-neutral-200 dark:border-neutral-800'
-        } font-mono select-none transition-all duration-200 bg-white dark:bg-neutral-900/60 shadow-xs backdrop-blur-xs cursor-text`}
+        } font-mono select-none transition-all duration-200 bg-white dark:bg-neutral-900/70 shadow-xs backdrop-blur-xs cursor-text`}
         style={{
-          height: `${lineHeightPx * VISIBLE_LINES + (fontSize >= 24 ? 64 : 48)}px`,
+          height: `${lineHeightPx * VISIBLE_LINES + (fontSize >= 28 ? 52 : 44)}px`,
           overflow: 'hidden',
           fontSize: `${fontSize}px`,
         }}
@@ -262,7 +262,7 @@ export default function TypingArea({
                           {/* Smooth caret */}
                           {isCurrent && (
                             <span
-                              className="typing-caret absolute -left-[1px] top-[0.25em] bottom-[0.25em] w-[2.5px] rounded-full"
+                              className="typing-caret absolute -left-[1.5px] top-[0.18em] bottom-[0.18em] w-[3px] rounded-full"
                               style={{
                                 background: 'var(--caret-color, currentColor)',
                               }}
@@ -274,12 +274,12 @@ export default function TypingArea({
                               isError
                                 ? isSpace
                                   ? 'bg-red-500/25 border-b-2 border-red-500 text-transparent rounded-xs'
-                                  : 'text-red-500 dark:text-red-400 bg-red-500/15 rounded-xs'
+                                  : 'text-red-500 dark:text-red-400 bg-red-500/15 rounded-xs font-semibold'
                                 : isCorrect
-                                ? 'text-neutral-800 dark:text-neutral-200'
+                                ? 'text-neutral-900 dark:text-neutral-100 font-medium'
                                 : isCurrent
-                                ? 'text-neutral-900 dark:text-neutral-100 font-semibold'
-                                : 'text-neutral-400 dark:text-neutral-600'
+                                ? 'text-neutral-950 dark:text-white font-bold'
+                                : 'text-neutral-400 dark:text-neutral-500'
                             }`}
                           >
                             {char}
