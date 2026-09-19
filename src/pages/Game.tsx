@@ -809,9 +809,17 @@ export default function Game() {
               combo={combo}
               mode={mode}
               level={currentLevel}
+              levelTitle={mode === 'lesson' ? levelConfig.title : undefined}
               targetWpm={mode === 'lesson' ? levelConfig.targetWpm : undefined}
               targetAccuracy={mode === 'lesson' ? levelConfig.targetAccuracy : undefined}
               initialTime={activeInitialTime}
+              onPrevLevel={mode === 'lesson' ? handlePrevLevel : undefined}
+              onNextLevel={mode === 'lesson' ? handleNextLevel : undefined}
+              hasPrevLevel={currentLevel > 1}
+              hasNextLevel={currentLevel < 50}
+              selectedDuration={timedDuration}
+              onSelectDuration={handleSelectTimedDuration}
+              onOpenCustomModal={() => setIsCustomModalOpen(true)}
             />
           </div>
         </div>

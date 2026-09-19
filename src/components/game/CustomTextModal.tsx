@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { createPortal } from 'react-dom';
 import { PRESET_CUSTOM_TEXTS, type CustomPreset } from '../../data/words';
 
 interface CustomTextModalProps {
@@ -34,7 +35,7 @@ export default function CustomTextModal({
     onClose();
   };
 
-  return (
+  return createPortal(
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-fade-in">
       <div className="w-full max-w-xl bg-neutral-50 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-lg p-5 sm:p-6 space-y-4">
         {/* Header */}
@@ -50,61 +51,77 @@ export default function CustomTextModal({
           </button>
         </div>
 
-        {/* Presets */}
-        <div className="space-y-1.5">
-          <label className="text-xs font-medium text-neutral-500 dark:text-neutral-500 uppercase tracking-wider">
+        {/* Preset Selector */}
+        <div>
+          <label className="block text-xs font-medium text-neutral-500 dark:text-neutral-400 mb-1.5">
             Presets
           </label>
-          <div className="flex flex-wrap gap-1.5">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
             {PRESET_CUSTOM_TEXTS.map((preset) => (
               <button
                 key={preset.id}
                 onClick={() => handleSelectPreset(preset)}
-                className="px-2.5 py-1 text-xs font-medium rounded-md bg-neutral-100 dark:bg-neutral-800 hover:bg-neutral-200 dark:hover:bg-neutral-700 border border-neutral-200 dark:border-neutral-700 transition-colors cursor-pointer text-neutral-600 dark:text-neutral-400"
+                className="p-2 text-left border border-neutral-200 dark:border-neutral-800 rounded-md hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors cursor-pointer"
               >
-                {preset.name}
+                <div className="text-xs font-medium text-neutral-800 dark:text-neutral-200 truncate">
+                  {preset.name}
+                </div>
+                <div className="text-[10px] text-neutral-400 dark:text-neutral-500 capitalize">
+                  {preset.category}
+                </div>
               </button>
             ))}
           </div>
         </div>
 
-        {/* Text Area */}
-        <div className="space-y-1">
-          <div className="flex items-center justify-between text-xs text-neutral-400 dark:text-neutral-500">
-            <span>Your text:</span>
-            <span className="font-mono">{wordCount} words · {charCount} chars</span>
+        {/* Text Input */}
+        <div>
+          <div className="flex justify-between items-center mb-1.5">
+            <label className="text-xs font-medium text-neutral-500 dark:text-neutral-400">
+              Your Text
+            </label>
+            <span className="text-[10px] text-neutral-400 dark:text-neutral-500">
+              {wordCount} words · {charCount} characters
+            </span>
           </div>
           <textarea
             value={text}
             onChange={(e) => setText(e.target.value)}
-            placeholder="Paste your text here..."
+            placeholder="Paste or type your custom text here..."
             rows={5}
-            className="w-full p-3 text-sm font-mono rounded-md bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 text-neutral-900 dark:text-neutral-100 focus:outline-none focus:border-neutral-400 dark:focus:border-neutral-600 transition-colors resize-none placeholder:text-neutral-300 dark:placeholder:text-neutral-700"
+            className="w-full p-3 text-sm font-mono bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-md text-neutral-900 dark:text-neutral-100 placeholder:text-neutral-400 focus:outline-none focus:border-neutral-400 dark:focus:border-neutral-600 resize-none"
           />
         </div>
 
         {/* Time Limit */}
-        <div className="flex items-center justify-between pt-1">
-          <span className="text-xs font-medium text-neutral-500 dark:text-neutral-500">Time Limit</span>
-          <div className="flex items-center border border-neutral-200 dark:border-neutral-700 rounded-md overflow-hidden">
-            {[30, 60, 120, 0].map((seconds) => (
+        <div>
+          <label className="block text-xs font-medium text-neutral-500 dark:text-neutral-400 mb-1.5">
+            Time Limit
+          </label>
+          <div className="flex gap-2">
+            {[
+              { label: 'None', val: 0 },
+              { label: '30s', val: 30 },
+              { label: '60s', val: 60 },
+              { label: '120s', val: 120 },
+            ].map(({ label, val }) => (
               <button
-                key={seconds}
-                onClick={() => setTimeLimit(seconds)}
-                className={`px-3 py-1 text-xs font-medium transition-colors cursor-pointer ${
-                  timeLimit === seconds
-                    ? 'bg-neutral-900 dark:bg-neutral-100 text-white dark:text-neutral-900'
-                    : 'text-neutral-500 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-800'
+                key={val}
+                onClick={() => setTimeLimit(val)}
+                className={`flex-1 py-1.5 text-xs font-mono rounded-md border transition-colors cursor-pointer ${
+                  timeLimit === val
+                    ? 'border-neutral-900 dark:border-neutral-100 bg-neutral-900 dark:bg-neutral-100 text-white dark:text-neutral-900 font-medium'
+                    : 'border-neutral-200 dark:border-neutral-800 text-neutral-600 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-800'
                 }`}
               >
-                {seconds === 0 ? 'None' : `${seconds}s`}
+                {label}
               </button>
             ))}
           </div>
         </div>
 
         {/* Actions */}
-        <div className="flex items-center justify-end gap-2 pt-2 border-t border-neutral-200 dark:border-neutral-800">
+        <div className="flex justify-end gap-2 pt-2 border-t border-neutral-200 dark:border-neutral-800">
           <button
             onClick={onClose}
             className="px-4 py-2 text-xs font-medium text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200 rounded-md transition-colors cursor-pointer"
@@ -120,6 +137,7 @@ export default function CustomTextModal({
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

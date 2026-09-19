@@ -1,13 +1,26 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Keyboard, Timer, ShieldCheck } from 'lucide-react';
 import FingerPlacementModal from '../components/common/FingerPlacementModal';
 import FingerPlacementTutorial from '../components/common/FingerPlacementTutorial';
 import { secureStorage } from '../utils/secureStorage';
 
 export default function Home() {
+  const navigate = useNavigate();
   const [showPlacementModal, setShowPlacementModal] = useState(false);
   const currentLevel = secureStorage.getItem<number>('typingGameLevel', 1);
+
+  const handleStartLesson = () => {
+    try {
+      localStorage.setItem('typlix_game_mode', JSON.stringify('lesson'));
+    } catch {}
+    const skipGuide = localStorage.getItem('typlix_skip_finger_guide') === 'true';
+    if (skipGuide) {
+      navigate('/game?mode=lesson');
+    } else {
+      setShowPlacementModal(true);
+    }
+  };
 
   return (
     <div className="flex flex-col items-center justify-center text-center max-w-2xl mx-auto py-16 sm:py-24 animate-fade-in">
@@ -23,12 +36,7 @@ export default function Home() {
       <div className="flex flex-wrap items-center justify-center gap-2.5 sm:gap-3 mb-16 max-w-2xl mx-auto">
         {/* 1. Lessons Mode (Primary CTA) */}
         <button
-          onClick={() => {
-            try {
-              localStorage.setItem('typlix_game_mode', JSON.stringify('lesson'));
-            } catch {}
-            setShowPlacementModal(true);
-          }}
+          onClick={handleStartLesson}
           className="px-5 sm:px-6 py-3 bg-neutral-900 dark:bg-neutral-100 hover:bg-neutral-800 dark:hover:bg-neutral-200 active:scale-[0.98] transition-all text-white dark:text-neutral-900 text-sm font-semibold rounded-lg cursor-pointer flex items-center gap-2 shadow-xs"
         >
           <span className="text-base leading-none">📖</span>
@@ -92,12 +100,12 @@ export default function Home() {
         </Link>
       </div>
 
-      {/* 2-Second Finger Placement Countdown Modal */}
+      {/* Finger Placement Modal */}
       <FingerPlacementModal
         isOpen={showPlacementModal}
         onClose={() => setShowPlacementModal(false)}
         targetPath="/game?mode=lesson"
-        durationSeconds={2}
+        durationSeconds={3}
       />
 
       {/* Feature Highlights Grid */}
