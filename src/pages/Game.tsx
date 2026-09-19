@@ -856,7 +856,7 @@ export default function Game() {
 
         {/* Virtual Keyboard (toggleable) */}
         {showVirtualKeyboard ? (
-          <div className="shrink-0 animate-fade-in">
+          <div className="shrink-0 mt-3 sm:mt-6 pb-2 animate-fade-in">
             <VirtualKeyboard nextChar={targetText[typedText.length] || ''} />
           </div>
         ) : (

@@ -20,7 +20,7 @@ export default function VirtualKeyboard({ nextChar, showLayoutPicker = true }: V
   const lowerTarget = targetChar.toLowerCase();
 
   return (
-    <div className="w-full flex flex-col items-center gap-1.5 select-none pt-0.5 pb-1">
+    <div className="w-full flex flex-col items-center gap-2 select-none pt-2 pb-1">
       {/* Top Header: Finger hint + Layout Indicator */}
       <div className="w-full flex items-center justify-between px-1 max-w-xl">
         {/* Finger hint */}
