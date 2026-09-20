@@ -264,5 +264,46 @@ export const secureStorage = {
     } catch {
       // Ignore
     }
-  }
+  },
+
+  auditIntegrity(): { validKeys: string[]; tamperedKeys: string[]; totalKeys: number } {
+    const validKeys: string[] = [];
+    const tamperedKeys: string[] = [];
+
+    if (typeof window === 'undefined') {
+      return { validKeys, tamperedKeys, totalKeys: 0 };
+    }
+
+    try {
+      for (let i = 0; i < window.localStorage.length; i++) {
+        const key = window.localStorage.key(i);
+        if (!key) continue;
+
+        const raw = window.localStorage.getItem(key);
+        if (!raw) continue;
+
+        try {
+          const parsed = JSON.parse(raw) as Partial<SecureEnvelope<unknown>>;
+          if (parsed && typeof parsed === 'object' && parsed.sig && parsed.data !== undefined) {
+            const expectedSig = computeSignature(key, JSON.stringify(parsed.data));
+            if (parsed.sig === expectedSig) {
+              validKeys.push(key);
+            } else {
+              tamperedKeys.push(key);
+            }
+          }
+        } catch {
+          // Non-enveloped legacy key
+        }
+      }
+    } catch {
+      // Storage access error
+    }
+
+    return {
+      validKeys,
+      tamperedKeys,
+      totalKeys: validKeys.length + tamperedKeys.length,
+    };
+  },
 };

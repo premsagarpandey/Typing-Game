@@ -7,6 +7,8 @@ import { SOUND_PROFILES, previewProfileSound } from '../utils/soundEngine';
 import type { SoundProfileId } from '../utils/soundEngine';
 import { KEYBOARD_LAYOUTS, type KeyboardLayoutId } from '../data/keyboardLayouts';
 import { exportDataAsJSON, exportStatsAsCSV, importDataFromJSON } from '../utils/dataBackup';
+import { antiInspectManager } from '../utils/antiInspect';
+import SecurityAuditModal from '../components/common/SecurityAuditModal';
 
 export default function Settings() {
   const [soundEnabled, setSoundEnabled] = useLocalStorage('sound', true);
@@ -19,6 +21,9 @@ export default function Settings() {
   const [confirmClear, setConfirmClear] = useState(false);
   const [notice, setNotice] = useState<{ text: string; type: 'info' | 'success' | 'error' } | null>(null);
   const [previewingId, setPreviewingId] = useState<string | null>(null);
+  const [antiInspectEnabled, setAntiInspectEnabled] = useLocalStorage<boolean>('typlix_anti_inspect_enabled', true);
+  const [antiCheatEnabled, setAntiCheatEnabled] = useLocalStorage<boolean>('typlix_anti_cheat_enabled', true);
+  const [isSecurityModalOpen, setIsSecurityModalOpen] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -37,6 +42,29 @@ export default function Settings() {
     secureStorage.setItem('typlix_stats', []);
     setConfirmClear(false);
     showNotice('Session history cleared.', 'info');
+  };
+
+  const toggleAntiInspect = () => {
+    const next = !antiInspectEnabled;
+    setAntiInspectEnabled(next);
+    antiInspectManager.setEnabled(next);
+    showNotice(
+      next
+        ? 'Anti-Inspect Shield activated (DevTools shortcuts & right-click blocked).'
+        : 'Anti-Inspect Shield deactivated (DevTools allowed).',
+      'info'
+    );
+  };
+
+  const toggleAntiCheat = () => {
+    const next = !antiCheatEnabled;
+    setAntiCheatEnabled(next);
+    showNotice(
+      next
+        ? 'Anti-Cheat cadence sensor activated.'
+        : 'Anti-Cheat sensor paused.',
+      'info'
+    );
   };
 
   const handlePreview = useCallback((profileId: SoundProfileId) => {
@@ -356,6 +384,89 @@ export default function Settings() {
           </div>
         </div>
 
+        {/* ═══════════════════ SECURITY & ANTI-INSPECT SECTION ═══════════════════ */}
+        <div className="pt-4 border-t border-neutral-200 dark:border-neutral-800 space-y-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="text-base" aria-hidden="true">🛡️</span>
+                <h3 className="font-medium text-neutral-900 dark:text-neutral-100 text-sm">
+                  Security & Anti-Inspect Protection
+                </h3>
+              </div>
+              <p className="text-xs text-neutral-500 dark:text-neutral-500 mt-0.5">
+                Protect session integrity, block DevTools inspection, and prevent automated macro cheats
+              </p>
+            </div>
+            <button
+              onClick={() => setIsSecurityModalOpen(true)}
+              className="px-2.5 py-1 text-xs font-medium rounded-md border border-neutral-300 dark:border-neutral-700 bg-neutral-100/50 dark:bg-neutral-800/50 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-200/60 dark:hover:bg-neutral-700 transition-colors cursor-pointer flex items-center gap-1.5"
+            >
+              <span>🔍</span> Audit
+            </button>
+          </div>
+
+          <div className="space-y-3 bg-neutral-100/40 dark:bg-neutral-900/40 p-3.5 rounded-lg border border-neutral-200/70 dark:border-neutral-800/70">
+            {/* Anti-Inspect Toggle */}
+            <div className="flex items-center justify-between">
+              <div>
+                <h4 className="text-xs font-semibold text-neutral-900 dark:text-neutral-100">
+                  Anti-Inspect & Shortcut Shield
+                </h4>
+                <p className="text-[11px] text-neutral-500 dark:text-neutral-400">
+                  Blocks F12, Ctrl+Shift+I/J/C, Ctrl+U, and right-click context inspect
+                </p>
+              </div>
+              <button
+                type="button"
+                role="switch"
+                aria-checked={antiInspectEnabled}
+                onClick={toggleAntiInspect}
+                className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors cursor-pointer ${
+                  antiInspectEnabled ? 'bg-neutral-900 dark:bg-neutral-100' : 'bg-neutral-300 dark:bg-neutral-700'
+                }`}
+              >
+                <span
+                  className={`inline-block h-3.5 w-3.5 transform rounded-full transition-transform shadow-sm ${
+                    antiInspectEnabled
+                      ? 'translate-x-[18px] bg-white dark:bg-neutral-900'
+                      : 'translate-x-[3px] bg-white dark:bg-neutral-400'
+                  }`}
+                />
+              </button>
+            </div>
+
+            {/* Anti-Cheat Cadence Sensor */}
+            <div className="flex items-center justify-between pt-2.5 border-t border-neutral-200/50 dark:border-neutral-800/50">
+              <div>
+                <h4 className="text-xs font-semibold text-neutral-900 dark:text-neutral-100">
+                  Anti-Cheat Cadence Sensor
+                </h4>
+                <p className="text-[11px] text-neutral-500 dark:text-neutral-400">
+                  Filters synthetic scripts, unnatural keystroke intervals, and paste injections
+                </p>
+              </div>
+              <button
+                type="button"
+                role="switch"
+                aria-checked={antiCheatEnabled}
+                onClick={toggleAntiCheat}
+                className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors cursor-pointer ${
+                  antiCheatEnabled ? 'bg-neutral-900 dark:bg-neutral-100' : 'bg-neutral-300 dark:bg-neutral-700'
+                }`}
+              >
+                <span
+                  className={`inline-block h-3.5 w-3.5 transform rounded-full transition-transform shadow-sm ${
+                    antiCheatEnabled
+                      ? 'translate-x-[18px] bg-white dark:bg-neutral-900'
+                      : 'translate-x-[3px] bg-white dark:bg-neutral-400'
+                  }`}
+                />
+              </button>
+            </div>
+          </div>
+        </div>
+
         {/* ═══════════════════ DANGER ZONE SECTION ═══════════════════ */}
         {/* Reset Progress */}
         <div className="pt-4 border-t border-neutral-200 dark:border-neutral-800">
@@ -421,6 +532,11 @@ export default function Settings() {
           )}
         </div>
       </div>
+
+      <SecurityAuditModal
+        isOpen={isSecurityModalOpen}
+        onClose={() => setIsSecurityModalOpen(false)}
+      />
     </div>
   );
 }

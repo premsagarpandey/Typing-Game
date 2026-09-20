@@ -224,6 +224,23 @@ export default function WpmProgressChart({ sessions }: WpmProgressChartProps) {
     setTooltip(null);
   }, []);
 
+  // ── Stats mini-badges ───────────────────────────────────────────
+  const trendInfo = useMemo(() => {
+    if (filteredSessions.length < 2) return null;
+    const recent5 = filteredSessions.slice(-5);
+    const older5 = filteredSessions.slice(-10, -5);
+    if (older5.length === 0) return null;
+
+    const recentAvg = Math.round(
+      recent5.reduce((a, s) => a + s.wpm, 0) / recent5.length
+    );
+    const olderAvg = Math.round(
+      older5.reduce((a, s) => a + s.wpm, 0) / older5.length
+    );
+    const diff = recentAvg - olderAvg;
+    return { diff, recentAvg, olderAvg };
+  }, [filteredSessions]);
+
   // ── Render empty state ──────────────────────────────────────────
   if (sessions.length === 0) {
     return (
@@ -485,23 +502,6 @@ export default function WpmProgressChart({ sessions }: WpmProgressChartProps) {
       </svg>
     );
   };
-
-  // ── Stats mini-badges ───────────────────────────────────────────
-  const trendInfo = useMemo(() => {
-    if (filteredSessions.length < 2) return null;
-    const recent5 = filteredSessions.slice(-5);
-    const older5 = filteredSessions.slice(-10, -5);
-    if (older5.length === 0) return null;
-
-    const recentAvg = Math.round(
-      recent5.reduce((a, s) => a + s.wpm, 0) / recent5.length
-    );
-    const olderAvg = Math.round(
-      older5.reduce((a, s) => a + s.wpm, 0) / older5.length
-    );
-    const diff = recentAvg - olderAvg;
-    return { diff, recentAvg, olderAvg };
-  }, [filteredSessions]);
 
   return (
     <div className="border border-neutral-200 dark:border-neutral-800 rounded-lg overflow-hidden bg-neutral-50 dark:bg-neutral-950">

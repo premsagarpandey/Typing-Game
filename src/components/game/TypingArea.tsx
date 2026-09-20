@@ -2,6 +2,7 @@ import { useRef, useEffect, useMemo, useState, useCallback } from 'react';
 import { motion, useAnimation } from 'framer-motion';
 import type { GameStatus } from '../../hooks/useTypingGame';
 import { antiCheatEngine } from '../../utils/antiCheat';
+import { antiInspectManager } from '../../utils/antiInspect';
 
 interface TypingAreaProps {
   targetText: string;
@@ -128,6 +129,17 @@ export default function TypingArea({
 
   const handlePaste = (e: React.ClipboardEvent) => {
     e.preventDefault();
+    antiInspectManager.notify('paste', 'Direct paste / clipboard injection blocked for session integrity.');
+  };
+
+  const handleCopy = (e: React.ClipboardEvent) => {
+    e.preventDefault();
+    antiInspectManager.notify('tamper', 'Copying prompt text is restricted during typing tests.');
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    antiInspectManager.notify('tamper', 'Drag-and-drop text injection blocked.');
   };
 
   // Tokenize text
@@ -204,8 +216,8 @@ export default function TypingArea({
           onChange={(e) => onInput(e.target.value)}
           onKeyDown={handleKeyDown}
           onPaste={handlePaste}
-          onDrop={(e) => e.preventDefault()}
-          onCopy={(e) => e.preventDefault()}
+          onDrop={handleDrop}
+          onCopy={handleCopy}
           onCut={(e) => e.preventDefault()}
           disabled={status !== 'idle' && status !== 'playing'}
           autoComplete="off"

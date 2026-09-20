@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import Navbar from './components/layout/Navbar';
 import Home from './pages/Home';
@@ -6,7 +7,9 @@ import Stats from './pages/Stats';
 import Leaderboard from './pages/Leaderboard';
 import Settings from './pages/Settings';
 import ErrorBoundary from './components/common/ErrorBoundary';
+import SecurityToast from './components/common/SecurityToast';
 import { ThemeProvider } from './context/ThemeContext';
+import { initSecuritySuite } from './utils/security';
 
 function AppLayout() {
   const location = useLocation();
@@ -31,11 +34,16 @@ function AppLayout() {
           <span>© {new Date().getFullYear()} Typlix · Minimalist & Fast Touch Typing</span>
         </footer>
       )}
+      <SecurityToast />
     </div>
   );
 }
 
 export default function App() {
+  useEffect(() => {
+    initSecuritySuite();
+  }, []);
+
   return (
     <ErrorBoundary>
       <ThemeProvider>
