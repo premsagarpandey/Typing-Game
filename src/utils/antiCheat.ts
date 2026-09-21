@@ -20,10 +20,10 @@ export class AntiCheatEngine {
 
   // Maximum allowable sustained human WPM threshold for validation
   private static readonly MAX_HUMAN_WPM = 260;
-  // Minimum realistic human interval between key presses (ms)
-  private static readonly MIN_HUMAN_INTERVAL_MS = 18;
+  // Minimum realistic bot interval between synthetic key presses (ms)
+  private static readonly MIN_BOT_INTERVAL_MS = 3;
   // Threshold score at which a session is permanently flagged
-  private static readonly FLAG_THRESHOLD = 5;
+  private static readonly FLAG_THRESHOLD = 10;
 
   public reset(): void {
     this.lastKeyTimestamp = 0;
@@ -34,16 +34,42 @@ export class AntiCheatEngine {
     this.rapidKeystrokeStreak = 0;
   }
 
+  // Non-typing modifier and navigation keys that should never affect cadence
+  private static readonly IGNORED_KEYS = new Set([
+    'CapsLock',
+    'Shift',
+    'Control',
+    'Alt',
+    'Meta',
+    'Escape',
+    'Tab',
+    'ArrowLeft',
+    'ArrowRight',
+    'ArrowUp',
+    'ArrowDown',
+    'Home',
+    'End',
+    'PageUp',
+    'PageDown',
+    'Insert',
+    'Delete',
+  ]);
+
   /**
    * Evaluates keydown / keypress event authenticity
    */
   public handleKeyEvent(e: React.KeyboardEvent | KeyboardEvent): boolean {
-    if (this.isFlagged) return false;
+    if (this.isFlagged) return true; // Do not block typing even if flagged
 
-    // 1. Synthetic event check
+    // Ignore modifier keys and navigation keys
+    if (e.key && AntiCheatEngine.IGNORED_KEYS.has(e.key)) {
+      return true;
+    }
+
+    // 1. Synthetic event check (safe check: only flag if explicitly false, not undefined)
     if (e.isTrusted === false) {
       this.flagViolation('Synthetic script event detected (untrusted event)');
-      return false;
+      return true; // Still allow typing so user is not permanently stuck
     }
 
     const now = performance.now();
@@ -55,18 +81,21 @@ export class AntiCheatEngine {
         this.keystrokeIntervals.shift();
       }
 
-      // Check for impossibly fast consecutive keystrokes (bot macro)
-      if (delta < AntiCheatEngine.MIN_HUMAN_INTERVAL_MS) {
+      // Check for impossibly fast consecutive keystrokes (software bot script < 3ms)
+      if (delta < AntiCheatEngine.MIN_BOT_INTERVAL_MS) {
         this.rapidKeystrokeStreak++;
-        if (this.rapidKeystrokeStreak >= 3) {
+        if (this.rapidKeystrokeStreak >= 12) {
           this.anomalyScore += 2;
           if (this.anomalyScore >= AntiCheatEngine.FLAG_THRESHOLD) {
             this.flagViolation('Automated keystroke macro / bot cadence detected');
-            return false;
           }
         }
       } else {
         this.rapidKeystrokeStreak = Math.max(0, this.rapidKeystrokeStreak - 1);
+        // Gradually forgive anomaly score during normal human typing
+        if (this.anomalyScore > 0 && delta > 40) {
+          this.anomalyScore = Math.max(0, this.anomalyScore - 0.2);
+        }
       }
     }
 
@@ -75,15 +104,16 @@ export class AntiCheatEngine {
   }
 
   /**
-   * Validates text input differences to prevent paste or multi-character injection
+   * Validates text input differences to prevent paste or multi-character injection.
+   * Single character keystrokes and deletions are always permitted so typing never freezes.
    */
   public validateInput(prevVal: string, newVal: string): boolean {
-    if (this.isFlagged) return false;
-
     const diff = newVal.length - prevVal.length;
 
-    // A human can only type 1 character per keypress or delete characters
-    if (diff > 2) {
+    // A human types 1 character per keypress or deletes characters.
+    // Allow up to 3 chars for standard text replacement or multi-byte characters,
+    // but block bulk paste injections (> 8 chars at once).
+    if (diff > 8) {
       this.flagViolation('Clipboard paste or bulk text injection blocked');
       return false;
     }

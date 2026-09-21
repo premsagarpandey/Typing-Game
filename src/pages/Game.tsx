@@ -8,7 +8,7 @@ import VirtualKeyboard from '../components/game/VirtualKeyboard';
 import CustomTextModal from '../components/game/CustomTextModal';
 import { getLevelConfig } from '../data/levels';
 import { useLocalStorage } from '../hooks/useLocalStorage';
-import { QUOTE_CATEGORIES, QUOTES, getRandomQuote } from '../data/quotes';
+import { QUOTE_CATEGORIES, QUOTES } from '../data/quotes';
 import type { QuoteCategory, Difficulty } from '../data/quotes';
 import { CODE_LANGUAGES, CODE_SNIPPETS } from '../data/codeSnippets';
 import type { CodeLanguage } from '../data/codeSnippets';
@@ -50,10 +50,6 @@ export default function Game() {
     'typlix_quote_difficulty',
     null
   );
-  const [currentQuoteInfo, setCurrentQuoteInfo] = useState(() => {
-    const q = getRandomQuote(null, null);
-    return { author: q.author, source: q.source };
-  });
 
   // Code mode state
   const [codeLanguage, setCodeLanguage] = useLocalStorage<CodeLanguage | null>(
@@ -64,11 +60,6 @@ export default function Game() {
     'typlix_code_difficulty',
     null
   );
-  const [currentSnippetInfo, setCurrentSnippetInfo] = useState({
-    title: '',
-    language: '' as string,
-    description: '',
-  });
 
   const levelConfig = useMemo(() => getLevelConfig(currentLevel), [currentLevel]);
 
@@ -114,6 +105,30 @@ export default function Game() {
     codeLanguage,
     codeDifficulty,
   });
+
+  // Derived quote info from target text
+  const currentQuoteInfo = useMemo(() => {
+    if (mode === 'quotes' && targetText) {
+      const match = QUOTES.find((q) => q.text === targetText);
+      if (match) return { author: match.author, source: match.source };
+    }
+    return { author: '', source: '' };
+  }, [mode, targetText]);
+
+  // Derived code snippet info from target text
+  const currentSnippetInfo = useMemo(() => {
+    if (mode === 'code' && targetText) {
+      const match = CODE_SNIPPETS.find((s) => s.code === targetText);
+      if (match) {
+        return {
+          title: match.title,
+          language: match.language,
+          description: match.description,
+        };
+      }
+    }
+    return { title: '', language: '', description: '' };
+  }, [mode, targetText]);
 
   // Synchronize mode from URL search param if present (e.g. /game?mode=quotes)
   useEffect(() => {
@@ -197,25 +212,6 @@ export default function Game() {
     setTimeout(() => resetGame(), 0);
   };
 
-  // Track current quote/snippet info for display
-  useEffect(() => {
-    if (mode === 'quotes' && targetText) {
-      const match = QUOTES.find((q) => q.text === targetText);
-      if (match) {
-        setCurrentQuoteInfo({ author: match.author, source: match.source });
-      }
-    }
-    if (mode === 'code' && targetText) {
-      const match = CODE_SNIPPETS.find((s) => s.code === targetText);
-      if (match) {
-        setCurrentSnippetInfo({
-          title: match.title,
-          language: match.language,
-          description: match.description,
-        });
-      }
-    }
-  }, [mode, targetText]);
 
   // Keyboard shortcut handlers for Enter and R when finished
   useEffect(() => {

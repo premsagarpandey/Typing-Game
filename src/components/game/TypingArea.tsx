@@ -3,6 +3,8 @@ import { motion, useAnimation } from 'framer-motion';
 import type { GameStatus } from '../../hooks/useTypingGame';
 import { antiCheatEngine } from '../../utils/antiCheat';
 import { antiInspectManager } from '../../utils/antiInspect';
+import CapsLockWarningModal from '../common/CapsLockWarningModal';
+import { useLocalStorage } from '../../hooks/useLocalStorage';
 
 interface TypingAreaProps {
   targetText: string;
@@ -82,6 +84,38 @@ export default function TypingArea({
   const containerRef = useRef<HTMLDivElement>(null);
   const controls = useAnimation();
 
+  // Caps Lock state & warning modal control
+  const [capsLockOn, setCapsLockOn] = useState(false);
+  const [isModalDismissed, setIsModalDismissed] = useState(false);
+  const [autoFixCapsLock, setAutoFixCapsLock] = useLocalStorage<boolean>('typlix_capslock_autofix', true);
+
+  // Stable refs for event listeners
+  const typedTextRef = useRef(typedText);
+  const targetTextRef = useRef(targetText);
+  const statusRef = useRef(status);
+  const capsLockOnRef = useRef(capsLockOn);
+  const autoFixCapsLockRef = useRef(autoFixCapsLock);
+
+  useEffect(() => {
+    typedTextRef.current = typedText;
+  }, [typedText]);
+
+  useEffect(() => {
+    targetTextRef.current = targetText;
+  }, [targetText]);
+
+  useEffect(() => {
+    statusRef.current = status;
+  }, [status]);
+
+  useEffect(() => {
+    capsLockOnRef.current = capsLockOn;
+  }, [capsLockOn]);
+
+  useEffect(() => {
+    autoFixCapsLockRef.current = autoFixCapsLock;
+  }, [autoFixCapsLock]);
+
   // Container width for line computation
   const [containerWidth, setContainerWidth] = useState(0);
 
@@ -115,16 +149,200 @@ export default function TypingArea({
     }
   }, [shakeTrigger, controls]);
 
-  // Auto-focus
+  // Multi-layered Caps Lock Detection (getModifierState + key case heuristic)
+  const updateCapsLockState = useCallback(
+    (e: KeyboardEvent | React.KeyboardEvent | MouseEvent | React.MouseEvent) => {
+      let detected: boolean | null = null;
+
+      if (typeof e.getModifierState === 'function') {
+        detected = e.getModifierState('CapsLock');
+      } else if ('key' in e && typeof e.key === 'string' && e.key.length === 1 && /^[a-zA-Z]$/.test(e.key)) {
+        if (e.key >= 'A' && e.key <= 'Z' && !e.shiftKey) {
+          detected = true;
+        } else if (e.key >= 'a' && e.key <= 'z' && !e.shiftKey) {
+          detected = false;
+        }
+      }
+
+      if (detected !== null) {
+        setCapsLockOn(detected);
+        if (!detected) {
+          setIsModalDismissed(false); // Reset dismissal when Caps Lock is toggled off
+        }
+      }
+    },
+    []
+  );
+
+  // Direct Keystroke Engine & Auto-Focus Keeper
   useEffect(() => {
-    if (status === 'idle' || status === 'playing') {
-      const timer = setTimeout(() => inputRef.current?.focus(), 20);
-      return () => clearTimeout(timer);
-    }
-  }, [status, targetText]);
+    if (status !== 'idle' && status !== 'playing') return;
+
+    const focusInput = () => {
+      const el = inputRef.current;
+      if (!el) return;
+      // Don't steal focus from open text inputs or modals (dialogs, overlays)
+      const activeTag = document.activeElement?.tagName;
+      if (activeTag === 'TEXTAREA' || activeTag === 'SELECT') return;
+      if (document.activeElement?.closest('[role="dialog"]')) return;
+      if (document.activeElement !== el) {
+        el.focus({ preventScroll: true });
+      }
+      try {
+        const len = el.value.length;
+        el.setSelectionRange(len, len);
+      } catch {
+        // ignore
+      }
+    };
+
+    // Initial focus
+    const timer = setTimeout(focusInput, 20);
+
+    // Global keydown: captures EVERY typing key directly so typing NEVER stops or misses
+    const handleWindowKeyDown = (e: KeyboardEvent) => {
+      updateCapsLockState(e);
+
+      const currentStatus = statusRef.current;
+      if (currentStatus !== 'idle' && currentStatus !== 'playing') return;
+
+      // Don't intercept if focus is in a dialog/modal or textarea/select or another input
+      const activeTag = document.activeElement?.tagName;
+      if (activeTag === 'TEXTAREA' || activeTag === 'SELECT') return;
+      if (document.activeElement?.closest('[role="dialog"]')) return;
+      if (document.activeElement?.tagName === 'INPUT' && document.activeElement !== inputRef.current) return;
+
+      // System shortcuts (Ctrl, Alt, Meta)
+      if (e.ctrlKey || e.metaKey || e.altKey) {
+        // Support Ctrl+Backspace to delete the previous word cleanly
+        if (e.ctrlKey && e.key === 'Backspace') {
+          e.preventDefault();
+          const currentTyped = typedTextRef.current;
+          const trimmed = currentTyped.trimEnd();
+          const lastSpace = trimmed.lastIndexOf(' ');
+          const nextVal = lastSpace >= 0 ? trimmed.slice(0, lastSpace + 1) : '';
+          onInput(nextVal);
+          if (inputRef.current) {
+            inputRef.current.value = nextVal;
+            inputRef.current.setSelectionRange(nextVal.length, nextVal.length);
+          }
+        }
+        return;
+      }
+
+      // Handle Backspace directly
+      if (e.key === 'Backspace') {
+        e.preventDefault();
+        const currentTyped = typedTextRef.current;
+        if (currentTyped.length > 0) {
+          const nextVal = currentTyped.slice(0, -1);
+          onInput(nextVal);
+          if (inputRef.current) {
+            inputRef.current.value = nextVal;
+            inputRef.current.setSelectionRange(nextVal.length, nextVal.length);
+          }
+        }
+        focusInput();
+        return;
+      }
+
+      // Prevent Tab from blurring focus out
+      if (e.key === 'Tab') {
+        e.preventDefault();
+        return;
+      }
+
+      // Printable single character keystroke (letters, numbers, space, punctuation)
+      if (e.key.length === 1) {
+        e.preventDefault(); // Prevents Space from scrolling the page, prevents duplicate input
+        focusInput();
+
+        let charToType = e.key;
+        const currentTyped = typedTextRef.current;
+        const currentTarget = targetTextRef.current;
+
+        // Smart Auto-Fix: If Caps Lock is ON and auto-fix enabled, match expected target letter case
+        if (capsLockOnRef.current && autoFixCapsLockRef.current && currentTyped.length < currentTarget.length) {
+          const expectedChar = currentTarget[currentTyped.length];
+          if (expectedChar && expectedChar.toLowerCase() === charToType.toLowerCase()) {
+            charToType = expectedChar;
+          }
+        }
+
+        const nextVal = currentTyped + charToType;
+        onInput(nextVal);
+        if (inputRef.current) {
+          inputRef.current.value = nextVal;
+          inputRef.current.setSelectionRange(nextVal.length, nextVal.length);
+        }
+      }
+    };
+
+    const handleWindowKeyUp = (e: KeyboardEvent) => {
+      updateCapsLockState(e);
+    };
+
+    const handlePointerDown = (e: MouseEvent) => {
+      updateCapsLockState(e);
+    };
+
+    // Re-focus when the hidden input loses focus
+    const handleBlur = () => setTimeout(focusInput, 15);
+
+    // Re-focus when the browser tab/window regains focus
+    const handleWindowFocus = () => setTimeout(focusInput, 30);
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible') setTimeout(focusInput, 50);
+    };
+
+    // Periodic focus check
+    const focusInterval = setInterval(focusInput, 1200);
+
+    const el = inputRef.current;
+    el?.addEventListener('blur', handleBlur);
+    window.addEventListener('focus', handleWindowFocus);
+    window.addEventListener('keydown', handleWindowKeyDown, true);
+    window.addEventListener('keyup', handleWindowKeyUp, true);
+    window.addEventListener('pointerdown', handlePointerDown, true);
+    document.addEventListener('visibilitychange', handleVisibility);
+
+    return () => {
+      clearTimeout(timer);
+      clearInterval(focusInterval);
+      el?.removeEventListener('blur', handleBlur);
+      window.removeEventListener('focus', handleWindowFocus);
+      window.removeEventListener('keydown', handleWindowKeyDown, true);
+      window.removeEventListener('keyup', handleWindowKeyUp, true);
+      window.removeEventListener('pointerdown', handlePointerDown, true);
+      document.removeEventListener('visibilitychange', handleVisibility);
+    };
+  }, [status, onInput, updateCapsLockState]);
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    updateCapsLockState(e);
     antiCheatEngine.handleKeyEvent(e);
+  };
+
+  const handleKeyUp = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    updateCapsLockState(e);
+  };
+
+  // Fallback Input Handler for IME / on-screen keyboards
+  const handleInputChange = (rawVal: string) => {
+    let finalVal = rawVal;
+
+    // Smart Auto-Fix: If Caps Lock is ON and auto-fix is enabled:
+    if (capsLockOn && autoFixCapsLock && rawVal.length > typedText.length) {
+      const idx = rawVal.length - 1;
+      const targetChar = targetText[idx];
+      const typedChar = rawVal[idx];
+
+      if (targetChar && typedChar && targetChar.toLowerCase() === typedChar.toLowerCase()) {
+        finalVal = rawVal.slice(0, idx) + targetChar;
+      }
+    }
+
+    onInput(finalVal);
   };
 
   const handlePaste = (e: React.ClipboardEvent) => {
@@ -183,10 +401,45 @@ export default function TypingArea({
   // Focus handler
   const handleContainerClick = useCallback(() => {
     inputRef.current?.focus();
+    if (inputRef.current) {
+      const len = inputRef.current.value.length;
+      inputRef.current.setSelectionRange(len, len);
+    }
   }, []);
 
   return (
     <div className="relative w-full">
+      {/* ─── Caps Lock Warning Popup Modal ─── */}
+      <CapsLockWarningModal
+        isOpen={capsLockOn && !isModalDismissed && (status === 'idle' || status === 'playing')}
+        onClose={() => setIsModalDismissed(true)}
+        autoFixEnabled={autoFixCapsLock}
+        onToggleAutoFix={setAutoFixCapsLock}
+      />
+
+      {/* ─── Caps Lock Warning Banner & In-Page Badge ─── */}
+      {capsLockOn && (status === 'idle' || status === 'playing') && (
+        <div className="mb-3 px-3.5 sm:px-4 py-2 sm:py-2.5 border border-neutral-300 dark:border-neutral-700 bg-neutral-100/90 dark:bg-neutral-850/90 rounded-xl text-neutral-800 dark:text-neutral-200 text-xs font-medium flex items-center justify-between gap-2 shadow-xs animate-fade-in">
+          <div className="flex items-center gap-2 min-w-0">
+            <span className="font-mono text-[10px] sm:text-[11px] px-2 py-0.5 rounded-md bg-neutral-200 dark:bg-neutral-800 border border-neutral-300 dark:border-neutral-700 font-bold text-neutral-900 dark:text-neutral-100 shrink-0">
+              ⇪ CAPS LOCK
+            </span>
+            <span className="truncate text-xs text-neutral-600 dark:text-neutral-300">
+              {autoFixCapsLock
+                ? 'Active — Auto-matching character case to preserve lesson progress.'
+                : 'Active — Uppercase keystrokes may register as errors.'}
+            </span>
+          </div>
+          <button
+            type="button"
+            onClick={() => setIsModalDismissed(false)}
+            className="shrink-0 px-2.5 py-1 text-[11px] font-semibold rounded-lg bg-white dark:bg-neutral-800 hover:bg-neutral-50 dark:hover:bg-neutral-750 text-neutral-800 dark:text-neutral-200 transition-all cursor-pointer border border-neutral-300 dark:border-neutral-700 shadow-2xs"
+          >
+            Preferences
+          </button>
+        </div>
+      )}
+
       {securityFlag && (
         <div className="mb-3 px-4 py-2 border border-red-300 dark:border-red-900/50 bg-red-50 dark:bg-red-950/40 rounded-lg text-red-700 dark:text-red-400 text-xs font-medium flex items-center justify-between animate-fade-in">
           <span>Security Notice: {securityFlag}</span>
@@ -206,6 +459,16 @@ export default function TypingArea({
           overflow: 'hidden',
           fontSize: `${fontSize}px`,
         }}
+        onMouseDown={(e) => {
+          if (e.target !== inputRef.current) {
+            e.preventDefault();
+            inputRef.current?.focus();
+            if (inputRef.current) {
+              const len = inputRef.current.value.length;
+              inputRef.current.setSelectionRange(len, len);
+            }
+          }
+        }}
         onClick={handleContainerClick}
       >
         {/* Transparent input overlay for capturing keystrokes */}
@@ -213,8 +476,17 @@ export default function TypingArea({
           ref={inputRef}
           type="text"
           value={typedText}
-          onChange={(e) => onInput(e.target.value)}
+          onChange={(e) => handleInputChange(e.target.value)}
           onKeyDown={handleKeyDown}
+          onKeyUp={handleKeyUp}
+          onClick={(e) => {
+            const el = e.currentTarget;
+            el.setSelectionRange(el.value.length, el.value.length);
+          }}
+          onSelect={(e) => {
+            const el = e.currentTarget;
+            el.setSelectionRange(el.value.length, el.value.length);
+          }}
           onPaste={handlePaste}
           onDrop={handleDrop}
           onCopy={handleCopy}
@@ -225,7 +497,7 @@ export default function TypingArea({
           autoCapitalize="off"
           spellCheck="false"
           aria-label="Typing input field"
-          className="absolute inset-0 w-full h-full opacity-0 cursor-text z-10 p-0 m-0"
+          className="absolute inset-0 w-full h-full opacity-0 cursor-text z-10 p-0 m-0 select-none"
         />
 
         {/* Scrolling lines container */}
@@ -274,7 +546,7 @@ export default function TypingArea({
                           {/* Smooth caret */}
                           {isCurrent && (
                             <span
-                              className="typing-caret absolute -left-[1.5px] top-[0.18em] bottom-[0.18em] w-[3px] rounded-full"
+                              className="typing-caret absolute -right-[1.5px] top-[0.18em] bottom-[0.18em] w-[3px] rounded-full"
                               style={{
                                 background: 'var(--caret-color, currentColor)',
                               }}

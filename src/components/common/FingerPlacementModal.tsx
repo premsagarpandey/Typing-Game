@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import { useLocalStorage } from '../../hooks/useLocalStorage';
@@ -23,9 +23,17 @@ export default function FingerPlacementModal({
   const [dontShowAgain, setDontShowAgain] = useState(false);
   const layout = getKeyboardLayout(layoutId);
 
+  const handleStartNow = useCallback(() => {
+    if (dontShowAgain) {
+      try {
+        localStorage.setItem('typlix_skip_finger_guide', 'true');
+      } catch {}
+    }
+    navigate(targetPath);
+  }, [dontShowAgain, navigate, targetPath]);
+
   useEffect(() => {
     if (!isOpen) return;
-    setTimeLeft(durationSeconds);
 
     const stepMs = 100;
     const totalSteps = (durationSeconds * 1000) / stepMs;
@@ -38,7 +46,7 @@ export default function FingerPlacementModal({
 
       if (stepCount >= totalSteps) {
         clearInterval(interval);
-        navigate(targetPath);
+        handleStartNow();
       }
     }, stepMs);
 
@@ -59,18 +67,9 @@ export default function FingerPlacementModal({
       clearInterval(interval);
       window.removeEventListener('keydown', handleKeyDown);
     };
-  }, [isOpen, navigate, onClose, targetPath, durationSeconds, dontShowAgain]);
+  }, [isOpen, onClose, durationSeconds, handleStartNow]);
 
   if (!isOpen) return null;
-
-  const handleStartNow = () => {
-    if (dontShowAgain) {
-      try {
-        localStorage.setItem('typlix_skip_finger_guide', 'true');
-      } catch {}
-    }
-    navigate(targetPath);
-  };
 
   const progressPercent = Math.min(100, Math.max(0, ((durationSeconds - timeLeft) / durationSeconds) * 100));
 
