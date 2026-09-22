@@ -8,6 +8,8 @@ import SecurityToast from './components/common/SecurityToast';
 import { ThemeProvider } from './context/ThemeContext';
 import { initSecuritySuite } from './utils/security';
 
+import { AuthProvider } from './context/AuthContext';
+
 const Stats = lazy(() => import('./pages/Stats'));
 const Leaderboard = lazy(() => import('./pages/Leaderboard'));
 const Settings = lazy(() => import('./pages/Settings'));
@@ -57,11 +59,13 @@ export default function App() {
 
   return (
     <ErrorBoundary>
-      <ThemeProvider>
-        <Router>
-          <AppLayout />
-        </Router>
-      </ThemeProvider>
+      <AuthProvider>
+        <ThemeProvider>
+          <Router>
+            <AppLayout />
+          </Router>
+        </ThemeProvider>
+      </AuthProvider>
     </ErrorBoundary>
   );
 }
