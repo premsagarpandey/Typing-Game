@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import ThemeToggle from '../common/ThemeToggle';
 import { useAuth } from '../../context/AuthContext';
-import { LogIn, LogOut } from 'lucide-react';
+import { LogIn } from 'lucide-react';
 import AuthModal from '../common/AuthModal';
 
 const NAV_LINKS = [
@@ -15,7 +15,7 @@ const NAV_LINKS = [
 
 export default function Navbar() {
   const location = useLocation();
-  const { user, logout } = useAuth();
+  const { user } = useAuth();
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
 
   return (
@@ -55,20 +55,13 @@ export default function Navbar() {
 
           <div className="pl-1.5 sm:pl-2 ml-1 sm:ml-2 border-l border-neutral-200 dark:border-neutral-800 flex items-center gap-2">
             {user ? (
-              <div className="flex items-center gap-2">
+              <Link to="/profile" className="flex items-center gap-2 group cursor-pointer" title="View Profile">
                 <img
                   src={user.photoURL || `https://ui-avatars.com/api/?name=${user.displayName || user.email || 'User'}`}
                   alt="Avatar"
-                  className="w-7 h-7 rounded-full border border-neutral-300 dark:border-neutral-700 shadow-sm"
+                  className="w-7 h-7 rounded-full border border-neutral-300 dark:border-neutral-700 shadow-sm group-hover:ring-2 ring-neutral-400 dark:ring-neutral-500 transition-all"
                 />
-                <button
-                  onClick={logout}
-                  title="Log Out"
-                  className="p-1.5 rounded-md text-neutral-500 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors"
-                >
-                  <LogOut className="w-4 h-4" />
-                </button>
-              </div>
+              </Link>
             ) : (
               <button
                 onClick={() => setIsAuthModalOpen(true)}

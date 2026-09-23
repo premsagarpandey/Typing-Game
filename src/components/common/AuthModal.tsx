@@ -65,11 +65,22 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
   };
 
   const handleGoogleAuth = async () => {
+    if (loading) return;
+    setError(null);
+    setLoading(true);
     try {
       await loginWithGoogle();
       onClose();
     } catch (err: any) {
-      setError(err.message || 'Failed to authenticate with Google.');
+      if (err.code === 'auth/popup-closed-by-user') {
+        // User closed the popup voluntarily, no error message needed
+      } else if (err.code === 'auth/cancelled-popup-request') {
+        setError('Sign-in was interrupted. Please try clicking Google once.');
+      } else {
+        setError(err.message || 'Failed to authenticate with Google.');
+      }
+    } finally {
+      setLoading(false);
     }
   };
 

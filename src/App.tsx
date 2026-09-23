@@ -13,6 +13,7 @@ import { AuthProvider } from './context/AuthContext';
 const Stats = lazy(() => import('./pages/Stats'));
 const Leaderboard = lazy(() => import('./pages/Leaderboard'));
 const Settings = lazy(() => import('./pages/Settings'));
+const Profile = lazy(() => import('./pages/Profile'));
 
 function PageFallback() {
   return (
@@ -37,6 +38,7 @@ function AppLayout() {
             <Route path="/stats" element={<Stats />} />
             <Route path="/leaderboard" element={<Leaderboard />} />
             <Route path="/settings" element={<Settings />} />
+            <Route path="/profile" element={<Profile />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </Suspense>

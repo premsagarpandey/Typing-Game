@@ -3,6 +3,8 @@ import {
   type User,
   GoogleAuthProvider,
   signInWithPopup,
+  signInWithRedirect,
+  getRedirectResult,
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
   signOut,
@@ -16,6 +18,7 @@ interface AuthContextType {
   user: User | null;
   loading: boolean;
   loginWithGoogle: () => Promise<void>;
+  loginWithGoogleRedirect: () => Promise<void>;
   loginWithEmail: (e: string, p: string) => Promise<void>;
   signupWithEmail: (e: string, p: string) => Promise<void>;
   logout: () => Promise<void>;
@@ -56,6 +59,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   useEffect(() => {
+    // Check for redirect result from Google sign-in
+    getRedirectResult(auth).catch((error) => {
+      // Ignore if no redirect was pending
+      if (error?.code !== 'auth/null-user') {
+        console.warn('Redirect sign-in check:', error);
+      }
+    });
+
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
       setUser(currentUser);
       if (currentUser) {
@@ -67,13 +78,30 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return unsubscribe;
   }, []);
 
+  const loginWithGoogleRedirect = async () => {
+    const provider = new GoogleAuthProvider();
+    provider.setCustomParameters({ prompt: 'select_account' });
+    await signInWithRedirect(auth, provider);
+  };
+
   const loginWithGoogle = async () => {
+    const provider = new GoogleAuthProvider();
+    provider.setCustomParameters({ prompt: 'select_account' });
     try {
-      const provider = new GoogleAuthProvider();
       await signInWithPopup(auth, provider);
     } catch (error: any) {
-      console.error('Error logging in with Google:', error);
-      alert(`Login failed: ${error.message || 'Unknown error'}. Please check if pop-ups are allowed or if Google Auth is fully enabled.`);
+      console.warn('signInWithPopup encountered error:', error.code, error.message);
+      // When popup fails due to browser cross-origin cookie / partition blocking:
+      if (
+        error.code === 'auth/popup-closed-by-user' ||
+        error.code === 'auth/cancelled-popup-request' ||
+        error.code === 'auth/popup-blocked' ||
+        error.code === 'auth/internal-error'
+      ) {
+        console.info('Falling back to full-page redirect for Google Sign-In...');
+        await signInWithRedirect(auth, provider);
+        return;
+      }
       throw error;
     }
   };
@@ -106,7 +134,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, loginWithGoogle, loginWithEmail, signupWithEmail, logout }}>
+    <AuthContext.Provider value={{ user, loading, loginWithGoogle, loginWithGoogleRedirect, loginWithEmail, signupWithEmail, logout }}>
       {children}
     </AuthContext.Provider>
   );
