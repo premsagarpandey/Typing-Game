@@ -3,17 +3,15 @@ import { useLocalStorage } from '../../hooks/useLocalStorage';
 import {
   getKeyboardLayout,
   getFingerInfoForLayout,
-  KEYBOARD_LAYOUTS,
   type KeyboardLayoutId,
 } from '../../data/keyboardLayouts';
 
 interface VirtualKeyboardProps {
   nextChar: string;
-  showLayoutPicker?: boolean;
 }
 
-function VirtualKeyboardComponent({ nextChar, showLayoutPicker = true }: VirtualKeyboardProps) {
-  const [layoutId, setLayoutId] = useLocalStorage<KeyboardLayoutId>('keyboardLayout', 'qwerty');
+function VirtualKeyboardComponent({ nextChar }: VirtualKeyboardProps) {
+  const [layoutId] = useLocalStorage<KeyboardLayoutId>('keyboardLayout', 'qwerty');
   const layout = useMemo(() => getKeyboardLayout(layoutId), [layoutId]);
 
   const targetChar = nextChar || '';
@@ -28,7 +26,7 @@ function VirtualKeyboardComponent({ nextChar, showLayoutPicker = true }: Virtual
         if (tag !== 'BUTTON') e.preventDefault();
       }}
     >
-      {/* Top Header: Finger hint + Layout Indicator */}
+      {/* Top Header: Finger hint + Current Layout Indicator (configured in Settings) */}
       <div className="w-full flex items-center justify-between px-1.5 max-w-2xl md:max-w-3xl">
         {/* Finger hint */}
         <div className="text-xs sm:text-sm text-neutral-400 dark:text-neutral-500 font-mono">
@@ -46,29 +44,15 @@ function VirtualKeyboardComponent({ nextChar, showLayoutPicker = true }: Virtual
           )}
         </div>
 
-        {/* Layout quick switcher */}
-        {showLayoutPicker && (
-          <div className="flex items-center gap-2">
-            <span className="text-xs text-neutral-400 dark:text-neutral-500 font-medium">Layout:</span>
-            <div className="inline-flex rounded-lg border border-neutral-200 dark:border-neutral-800 p-0.5 bg-neutral-100/70 dark:bg-neutral-900/70 shadow-2xs">
-              {(Object.keys(KEYBOARD_LAYOUTS) as KeyboardLayoutId[]).map((id) => (
-                <button
-                  key={id}
-                  type="button"
-                  onClick={() => setLayoutId(id)}
-                  className={`px-2.5 py-1 text-[11px] sm:text-xs uppercase font-mono font-medium rounded-md transition-all cursor-pointer ${
-                    layoutId === id
-                      ? 'bg-neutral-900 dark:bg-neutral-100 text-white dark:text-neutral-900 shadow-xs'
-                      : 'text-neutral-500 dark:text-neutral-400 hover:text-neutral-800 dark:hover:text-neutral-200'
-                  }`}
-                  title={`${KEYBOARD_LAYOUTS[id].name} - ${KEYBOARD_LAYOUTS[id].shortDesc}`}
-                >
-                  {id}
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
+        {/* Read-only Layout badge (configured in Settings) */}
+        <div className="flex items-center gap-1.5 font-mono text-xs">
+          <span
+            className="text-[11px] sm:text-xs font-semibold px-2.5 py-0.5 rounded-md bg-neutral-100 dark:bg-neutral-850 border border-neutral-200/80 dark:border-neutral-800 text-neutral-600 dark:text-neutral-400"
+            title="Keyboard layout can be changed in Settings"
+          >
+            {layout.name}
+          </span>
+        </div>
       </div>
 
       {/* Keyboard Matrix (enlarged & comfortable touch/visual target) */}
