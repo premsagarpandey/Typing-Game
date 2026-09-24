@@ -493,48 +493,67 @@ function TypingAreaComponent({
                 {isOutOfWindow ? (
                   <div style={{ height: `${lineHeightPx}px` }} />
                 ) : (
-                  lineTokens.map(({ text: wordText, startIndex }) => (
-                    <span key={startIndex} className="inline-flex whitespace-pre">
-                      {wordText.split('').map((char, i) => {
-                        const index = startIndex + i;
-                        const isTyped = index < typedText.length;
-                        const isCorrect = isTyped && typedText[index] === char;
-                        const isError = isTyped && !isCorrect;
-                        const isCurrent = index === typedText.length;
-                        const isSpace = char === ' ';
+                  lineTokens.map(({ text: wordText, startIndex }) => {
+                    const isCurrentWord =
+                      typedText.length >= startIndex && typedText.length < startIndex + wordText.length;
 
-                        return (
-                          <span key={index} className="relative inline-block">
-                            {/* Smooth caret */}
-                            {isCurrent && (
+                    return (
+                      <span key={startIndex} className="inline-flex whitespace-pre">
+                        {wordText.split('').map((char, i) => {
+                          const index = startIndex + i;
+                          const isTyped = index < typedText.length;
+                          const isCorrect = isTyped && typedText[index] === char;
+                          const isError = isTyped && !isCorrect;
+                          const isCurrent = index === typedText.length;
+                          const isSpace = char === ' ';
+
+                          return (
+                            <span key={index} className="relative inline-block">
+                              {/* Smooth caret placed BEFORE current untyped character */}
+                              {isCurrent && (
+                                <span
+                                  className="typing-caret absolute -left-[2px] top-[0.18em] bottom-[0.18em] w-[3px] rounded-full z-20 pointer-events-none"
+                                  style={{
+                                    background: 'var(--caret-color, currentColor)',
+                                  }}
+                                />
+                              )}
+
+                              {/* Caret after the last character when text is completed */}
+                              {index === targetText.length - 1 && typedText.length >= targetText.length && (
+                                <span
+                                  className="typing-caret absolute -right-[2px] top-[0.18em] bottom-[0.18em] w-[3px] rounded-full z-20 pointer-events-none"
+                                  style={{
+                                    background: 'var(--caret-color, currentColor)',
+                                  }}
+                                />
+                              )}
+
                               <span
-                                className="typing-caret absolute -right-[1.5px] top-[0.18em] bottom-[0.18em] w-[3px] rounded-full"
-                                style={{
-                                  background: 'var(--caret-color, currentColor)',
-                                }}
-                              />
-                            )}
-
-                            <span
-                              className={`transition-colors duration-75 ${
-                                isError
-                                  ? isSpace
-                                    ? 'bg-red-500/25 border-b-2 border-red-500 text-transparent rounded-xs'
-                                    : 'text-red-500 dark:text-red-400 bg-red-500/15 rounded-xs font-semibold'
-                                  : isCorrect
-                                  ? 'text-neutral-900 dark:text-neutral-100 font-medium'
-                                  : isCurrent
-                                  ? 'text-neutral-950 dark:text-white font-bold'
-                                  : 'text-neutral-400 dark:text-neutral-500'
-                              }`}
-                            >
-                              {char}
+                                className={`transition-colors duration-75 ${
+                                  isError
+                                    ? isSpace
+                                      ? 'bg-red-500/25 border-b-2 border-red-500 text-transparent rounded-xs'
+                                      : 'text-red-500 dark:text-red-400 bg-red-500/15 rounded-xs font-semibold'
+                                    : isCorrect
+                                    ? 'text-neutral-900 dark:text-neutral-100 font-medium'
+                                    : isCurrent
+                                    ? isSpace
+                                      ? 'animate-target-char border-b-2 border-neutral-900 dark:border-neutral-100 bg-neutral-900/10 dark:bg-neutral-100/15 rounded-xs text-neutral-800 dark:text-neutral-200 font-bold'
+                                      : 'animate-target-char text-neutral-950 dark:text-white font-extrabold bg-neutral-900/10 dark:bg-neutral-100/20 ring-1.5 ring-neutral-900/35 dark:ring-neutral-100/40 rounded-xs'
+                                    : isCurrentWord
+                                    ? 'text-neutral-700 dark:text-neutral-300 font-medium'
+                                    : 'text-neutral-400 dark:text-neutral-500'
+                                }`}
+                              >
+                                {isCurrent && isSpace ? '␣' : char}
+                              </span>
                             </span>
-                          </span>
-                        );
-                      })}
-                    </span>
-                  ))
+                          );
+                        })}
+                      </span>
+                    );
+                  })
                 )}
               </div>
             );
