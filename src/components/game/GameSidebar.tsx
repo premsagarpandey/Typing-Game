@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import { Link } from 'react-router-dom';
 import type { GameMode } from '../../hooks/useTypingGame';
 import { getLevelConfig } from '../../data/levels';
@@ -47,7 +48,7 @@ interface GameSidebarProps {
   setIsCustomModalOpen: (open: boolean) => void;
 }
 
-export default function GameSidebar({
+function GameSidebarComponent({
   mode,
   setIsSidebarOpen,
   currentLevel,
@@ -616,3 +617,5 @@ export default function GameSidebar({
         </aside>
   );
 }
+
+export default memo(GameSidebarComponent);

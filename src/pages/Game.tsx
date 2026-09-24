@@ -82,7 +82,6 @@ export default function Game() {
     combo,
     maxCombo,
     shakeTrigger,
-    securityFlag,
     handleInput,
     resetGame,
   } = useTypingGame(activeInitialTime, levelConfig, {
@@ -140,12 +139,13 @@ export default function Game() {
 
 
   // Switch timed duration
-  const handleSelectTimedDuration = (dur: number) => {
-    setTimedDuration(dur);
-    setTimeout(() => {
+  const handleSelectTimedDuration = useCallback(
+    (dur: number) => {
+      setTimedDuration(dur);
       resetGame();
-    }, 0);
-  };
+    },
+    [setTimedDuration, resetGame]
+  );
 
   // Select lesson level
   const handleSelectLevel = useCallback(
@@ -173,33 +173,52 @@ export default function Game() {
     resetGame();
   }, [resetGame]);
 
-  const handleApplyCustomText = (text: string, timeLimit: number) => {
-    setCustomText(text);
-    setCustomTimeLimit(timeLimit);
-    resetGame(undefined, text);
-  };
+  const handleApplyCustomText = useCallback(
+    (text: string, timeLimit: number) => {
+      setCustomText(text);
+      setCustomTimeLimit(timeLimit);
+      resetGame(undefined, text);
+    },
+    [setCustomText, setCustomTimeLimit, resetGame]
+  );
 
   // Quotes filter handlers
-  const handleQuoteCategoryChange = (cat: QuoteCategory | null) => {
-    setQuoteCategory(cat);
-    setTimeout(() => resetGame(), 0);
-  };
+  const handleQuoteCategoryChange = useCallback(
+    (cat: QuoteCategory | null) => {
+      setQuoteCategory(cat);
+      resetGame();
+    },
+    [setQuoteCategory, resetGame]
+  );
 
-  const handleQuoteDifficultyChange = (diff: Difficulty | null) => {
-    setQuoteDifficulty(diff);
-    setTimeout(() => resetGame(), 0);
-  };
+  const handleQuoteDifficultyChange = useCallback(
+    (diff: Difficulty | null) => {
+      setQuoteDifficulty(diff);
+      resetGame();
+    },
+    [setQuoteDifficulty, resetGame]
+  );
 
   // Code filter handlers
-  const handleCodeLanguageChange = (lang: CodeLanguage | null) => {
-    setCodeLanguage(lang);
-    setTimeout(() => resetGame(), 0);
-  };
+  const handleCodeLanguageChange = useCallback(
+    (lang: CodeLanguage | null) => {
+      setCodeLanguage(lang);
+      resetGame();
+    },
+    [setCodeLanguage, resetGame]
+  );
 
-  const handleCodeDifficultyChange = (diff: Difficulty | null) => {
-    setCodeDifficulty(diff);
-    setTimeout(() => resetGame(), 0);
-  };
+  const handleCodeDifficultyChange = useCallback(
+    (diff: Difficulty | null) => {
+      setCodeDifficulty(diff);
+      resetGame();
+    },
+    [setCodeDifficulty, resetGame]
+  );
+
+  const handleOpenCustomModal = useCallback(() => {
+    setIsCustomModalOpen(true);
+  }, []);
 
 
   // Keyboard shortcut handlers for Enter and R when finished
@@ -290,7 +309,7 @@ export default function Game() {
               hasNextLevel={currentLevel < 50}
               selectedDuration={timedDuration}
               onSelectDuration={handleSelectTimedDuration}
-              onOpenCustomModal={() => setIsCustomModalOpen(true)}
+              onOpenCustomModal={handleOpenCustomModal}
             />
           </div>
         </div>
@@ -302,7 +321,6 @@ export default function Game() {
             typedText={typedText}
             status={status}
             shakeTrigger={shakeTrigger}
-            securityFlag={securityFlag}
             onInput={handleInput}
           />
 
@@ -362,10 +380,9 @@ export default function Game() {
           mode={mode}
           levelConfig={levelConfig}
           modeLabel={modeLabel}
-          securityFlag={securityFlag}
           onNextLevel={handleNextLevel}
           onRetry={handleRetry}
-          onOpenCustomModal={() => setIsCustomModalOpen(true)}
+          onOpenCustomModal={handleOpenCustomModal}
         />
       )}
 

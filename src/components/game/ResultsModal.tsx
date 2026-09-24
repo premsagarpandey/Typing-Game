@@ -9,7 +9,6 @@ interface ResultsModalProps {
   mode?: GameMode;
   levelConfig?: LevelConfig;
   modeLabel?: string;
-  securityFlag?: string | null;
   onNextLevel?: () => void;
   onRetry: () => void;
   onOpenCustomModal?: () => void;
@@ -23,16 +22,14 @@ export default function ResultsModal({
   mode = 'lesson',
   levelConfig,
   modeLabel,
-  securityFlag,
   onNextLevel,
   onRetry,
   onOpenCustomModal,
 }: ResultsModalProps) {
   const isLesson = mode === 'lesson';
-  const isPassed = status === 'passed' && !securityFlag;
+  const isPassed = status === 'passed';
 
   const getTitle = () => {
-    if (securityFlag) return 'Session Flagged';
     if (isLesson) {
       return isPassed
         ? `Level ${levelConfig?.level || 1} Cleared`
@@ -45,7 +42,6 @@ export default function ResultsModal({
   };
 
   const getSubtitle = () => {
-    if (securityFlag) return 'Suspicious activity was detected during this session.';
     if (isLesson) {
       return isPassed
         ? 'You met the target requirements for this level.'
@@ -66,12 +62,6 @@ export default function ResultsModal({
       </h2>
 
       <p className="text-xs text-neutral-500 dark:text-neutral-500 mb-5">{getSubtitle()}</p>
-
-      {securityFlag && (
-        <div className="mb-4 p-3 border border-neutral-300 dark:border-neutral-700 rounded-md text-neutral-600 dark:text-neutral-400 text-xs">
-          {securityFlag}
-        </div>
-      )}
 
       <div className="space-y-2 mb-5 text-sm">
         <div className="flex justify-between py-2 border-b border-neutral-200 dark:border-neutral-800">

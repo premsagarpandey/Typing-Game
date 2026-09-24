@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useCallback } from 'react';
 import { secureStorage } from '../utils/secureStorage';
 
 export function useLocalStorage<T>(key: string, initialValue: T) {
@@ -6,10 +6,26 @@ export function useLocalStorage<T>(key: string, initialValue: T) {
     return secureStorage.getItem<T>(key, initialValue);
   });
 
-  useEffect(() => {
-    secureStorage.setItem(key, storedValue);
-  }, [key, storedValue]);
+  const setValue = useCallback(
+    (value: T | ((val: T) => T)) => {
+      try {
+        setStoredValue((prev) => {
+          const valueToStore = value instanceof Function ? value(prev) : value;
+          secureStorage.setItem(key, valueToStore);
+          window.dispatchEvent(
+            new CustomEvent('typlix_settings_changed', {
+              detail: { key, value: valueToStore },
+            })
+          );
+          return valueToStore;
+        });
+      } catch (error) {
+        console.error(`Error saving localStorage key "${key}":`, error);
+      }
+    },
+    [key]
+  );
 
-  return [storedValue, setStoredValue] as const;
+  return [storedValue, setValue] as const;
 }
 

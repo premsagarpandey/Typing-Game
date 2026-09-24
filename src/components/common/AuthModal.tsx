@@ -1,7 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Mail, Lock, ArrowRight } from 'lucide-react';
-import { useAuth } from '../../context/AuthContext';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../../hooks/useAuth';
+import { toast } from '../../utils/toast';
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -9,78 +11,135 @@ interface AuthModalProps {
 }
 
 export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
-  const { loginWithGoogle, loginWithEmail, signupWithEmail } = useAuth();
+  const { user, loginWithGoogle, loginWithGoogleRedirect, loginWithEmail, signupWithEmail } = useAuth();
+  const navigate = useNavigate();
   
   const [isLoginMode, setIsLoginMode] = useState(true);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [emailLoading, setEmailLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
+
+  const handleClose = useCallback(() => {
+    setEmail('');
+    setPassword('');
+    setEmailLoading(false);
+    setGoogleLoading(false);
+    onClose();
+  }, [onClose]);
+
+  // Automatically close modal and navigate to home whenever user is signed in
+  useEffect(() => {
+    if (user && isOpen) {
+      onClose();
+      navigate('/');
+    }
+  }, [user, isOpen, onClose, navigate]);
 
   // Close modal on escape key
-  React.useEffect(() => {
+  useEffect(() => {
+    if (!isOpen) return;
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
+      if (e.key === 'Escape') handleClose();
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [onClose]);
-
-  const ALLOWED_DOMAINS = [
-    '@gmail.com',
-    '@yahoo.com',
-    '@yahoo.in',
-    '@outlook.com',
-    '@protonmail.com',
-    '@proton.me',
-    '@zoho.com'
-  ];
+  }, [isOpen, handleClose]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError(null);
+    if (emailLoading || googleLoading) return;
 
-    const emailLower = email.toLowerCase();
-    const isValidDomain = ALLOWED_DOMAINS.some(domain => emailLower.endsWith(domain));
+    const emailLower = email.toLowerCase().trim();
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-    if (!isValidDomain) {
-      setError('Please enter a valid email id (e.g. @gmail.com, @yahoo.com, etc.)');
+    if (!emailRegex.test(emailLower)) {
+      toast.error('Please enter a valid email address.', 'Invalid Email');
       return;
     }
 
-    setLoading(true);
+    setEmailLoading(true);
 
     try {
       if (isLoginMode) {
-        await loginWithEmail(email, password);
+        await loginWithEmail(emailLower, password);
+        toast.success('Signed in successfully!', 'Welcome Back');
       } else {
-        await signupWithEmail(email, password);
+        await signupWithEmail(emailLower, password);
+        toast.success('Account created successfully!', 'Welcome to Typlix');
       }
-      onClose();
+      handleClose();
+      navigate('/');
     } catch (err: any) {
-      setError(err.message || 'An error occurred. Please try again.');
+      console.error('Email Auth Error:', err);
+      let message = 'An error occurred during authentication.';
+      if (
+        err.code === 'auth/invalid-credential' ||
+        err.code === 'auth/wrong-password' ||
+        err.code === 'auth/user-not-found'
+      ) {
+        message = 'Invalid email or password. Please check your credentials.';
+      } else if (err.code === 'auth/email-already-in-use') {
+        message = 'This email is already registered. Please sign in instead.';
+      } else if (err.code === 'auth/weak-password') {
+        message = 'Password is too weak. Please use at least 6 characters.';
+      } else if (err.code === 'auth/too-many-requests') {
+        message = 'Too many attempts. Please wait a few moments and try again.';
+      } else if (err.message) {
+        message = err.message;
+      }
+
+      handleClose();
+      navigate('/');
+      toast.error(message, isLoginMode ? 'Login Failed' : 'Sign Up Failed');
     } finally {
-      setLoading(false);
+      setEmailLoading(false);
     }
   };
 
   const handleGoogleAuth = async () => {
-    if (loading) return;
-    setError(null);
-    setLoading(true);
+    if (googleLoading || emailLoading) return;
+    setGoogleLoading(true);
+
     try {
       await loginWithGoogle();
-      onClose();
+      toast.success('Signed in with Google successfully!', 'Welcome Back');
+      handleClose();
+      navigate('/');
     } catch (err: any) {
+      console.error('Google Auth Error:', err);
+      let message = 'Failed to authenticate with Google.';
       if (err.code === 'auth/popup-closed-by-user') {
-        // User closed the popup voluntarily, no error message needed
+        message = 'Sign-in cancelled. The Google window was closed.';
+      } else if (err.code === 'auth/popup-blocked') {
+        message = 'Google sign-in popup was blocked by browser. Please allow popups for localhost.';
       } else if (err.code === 'auth/cancelled-popup-request') {
-        setError('Sign-in was interrupted. Please try clicking Google once.');
-      } else {
-        setError(err.message || 'Failed to authenticate with Google.');
+        message = 'Sign-in request interrupted. Please click Google once.';
+      } else if (err.code === 'auth/unauthorized-domain') {
+        message = 'This domain is not authorized in Firebase settings.';
+      } else if (err.message) {
+        message = err.message;
       }
+
+      handleClose();
+      navigate('/');
+      toast.error(message, 'Google Sign-In Error');
     } finally {
-      setLoading(false);
+      setGoogleLoading(false);
+    }
+  };
+
+  const handleGoogleRedirect = async () => {
+    if (googleLoading || emailLoading) return;
+    setGoogleLoading(true);
+
+    try {
+      await loginWithGoogleRedirect();
+    } catch (err: any) {
+      handleClose();
+      navigate('/');
+      toast.error(err.message || 'Failed to redirect to Google.', 'Redirect Error');
+      setGoogleLoading(false);
     }
   };
 
@@ -92,7 +151,7 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            onClick={onClose}
+            onClick={handleClose}
             className="absolute inset-0 bg-neutral-950/60 backdrop-blur-sm"
           />
 
@@ -104,8 +163,8 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
           >
             <div className="absolute top-4 right-4">
               <button
-                onClick={onClose}
-                className="p-1 text-neutral-500 hover:text-neutral-900 dark:hover:text-white bg-neutral-100 dark:bg-neutral-800 rounded-full transition-colors"
+                onClick={handleClose}
+                className="p-1 text-neutral-500 hover:text-neutral-900 dark:hover:text-white bg-neutral-100 dark:bg-neutral-800 rounded-full transition-colors cursor-pointer"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -125,16 +184,6 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
                     : 'Sign up to sync your typing stats everywhere'}
                 </p>
               </div>
-
-              {error && (
-                <motion.div
-                  initial={{ opacity: 0, y: -10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="p-3 mb-6 text-sm font-medium text-red-600 bg-red-50 dark:bg-red-900/20 dark:text-red-400 rounded-lg border border-red-200 dark:border-red-900/50"
-                >
-                  {error}
-                </motion.div>
-              )}
 
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div>
@@ -178,10 +227,10 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
 
                 <button
                   type="submit"
-                  disabled={loading}
-                  className="w-full flex items-center justify-center gap-2 py-2.5 px-4 border border-transparent rounded-xl shadow-sm text-sm font-semibold text-white bg-neutral-900 hover:bg-neutral-800 dark:bg-white dark:text-neutral-900 dark:hover:bg-neutral-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-neutral-900 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  disabled={emailLoading || googleLoading}
+                  className="w-full flex items-center justify-center gap-2 py-2.5 px-4 border border-transparent rounded-xl shadow-sm text-sm font-semibold text-white bg-neutral-900 hover:bg-neutral-800 dark:bg-white dark:text-neutral-900 dark:hover:bg-neutral-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-neutral-900 transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
                 >
-                  {loading ? (
+                  {emailLoading ? (
                     <div className="w-5 h-5 border-2 border-white/30 dark:border-neutral-900/30 border-t-white dark:border-t-neutral-900 rounded-full animate-spin" />
                   ) : (
                     <>
@@ -205,31 +254,46 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
 
               <div className="mt-6">
                 <button
+                  type="button"
                   onClick={handleGoogleAuth}
-                  disabled={loading}
-                  className="w-full flex items-center justify-center gap-3 py-2.5 px-4 border border-neutral-300 dark:border-neutral-700 rounded-xl shadow-sm text-sm font-semibold text-neutral-700 dark:text-neutral-200 bg-white dark:bg-neutral-800 hover:bg-neutral-50 dark:hover:bg-neutral-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-neutral-900 transition-colors disabled:opacity-50"
+                  disabled={googleLoading || emailLoading}
+                  className="w-full flex items-center justify-center gap-3 py-2.5 px-4 border border-neutral-300 dark:border-neutral-700 rounded-xl shadow-sm text-sm font-semibold text-neutral-700 dark:text-neutral-200 bg-white dark:bg-neutral-800 hover:bg-neutral-50 dark:hover:bg-neutral-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-neutral-900 transition-colors disabled:opacity-50 cursor-pointer"
                 >
-                  <svg className="w-5 h-5" viewBox="0 0 24 24">
-                    <path
-                      d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
-                      fill="#4285F4"
-                    />
-                    <path
-                      d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
-                      fill="#34A853"
-                    />
-                    <path
-                      d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
-                      fill="#FBBC05"
-                    />
-                    <path
-                      d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
-                      fill="#EA4335"
-                    />
-                    <path d="M1 1h22v22H1z" fill="none" />
-                  </svg>
-                  Google
+                  {googleLoading ? (
+                    <div className="w-5 h-5 border-2 border-neutral-400 border-t-neutral-900 dark:border-t-white rounded-full animate-spin" />
+                  ) : (
+                    <svg className="w-5 h-5" viewBox="0 0 24 24">
+                      <path
+                        d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
+                        fill="#4285F4"
+                      />
+                      <path
+                        d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
+                        fill="#34A853"
+                      />
+                      <path
+                        d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
+                        fill="#FBBC05"
+                      />
+                      <path
+                        d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
+                        fill="#EA4335"
+                      />
+                      <path d="M1 1h22v22H1z" fill="none" />
+                    </svg>
+                  )}
+                  <span>{googleLoading ? 'Connecting to Google...' : 'Google'}</span>
                 </button>
+
+                <div className="mt-2.5 text-center">
+                  <button
+                    type="button"
+                    onClick={handleGoogleRedirect}
+                    className="text-xs text-neutral-500 hover:text-neutral-900 dark:hover:text-neutral-200 underline transition-colors cursor-pointer"
+                  >
+                    Trouble with popup? Try signing in with redirect &rarr;
+                  </button>
+                </div>
               </div>
             </div>
 
@@ -239,9 +303,8 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
                 <button
                   onClick={() => {
                     setIsLoginMode(!isLoginMode);
-                    setError(null);
                   }}
-                  className="font-semibold text-neutral-900 dark:text-white hover:underline transition-all"
+                  className="font-semibold text-neutral-900 dark:text-white hover:underline transition-all cursor-pointer"
                 >
                   {isLoginMode ? 'Sign up' : 'Sign in'}
                 </button>

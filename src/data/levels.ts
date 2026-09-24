@@ -1,5 +1,3 @@
-import { deepFreeze } from '../utils/security';
-
 export interface LevelInfo {
   readonly title: string;
   readonly category: 'Home Row' | 'Top Row' | 'Bottom Row' | 'Sentences' | 'Numbers & Symbols' | 'Speed Pro';
@@ -82,7 +80,7 @@ export function getFingerInfo(char: string) {
   return FINGER_MAP[lower] || { hand: 'Right', finger: 'Thumb', color: 'text-blue-400 bg-blue-500/20 border-blue-500/40' };
 }
 
-const LEVEL_DEFINITIONS: readonly LevelInfo[] = deepFreeze([
+const LEVEL_DEFINITIONS: readonly LevelInfo[] = [
   // --- PHASE 1: HOME ROW BASICS (Levels 1 - 10) ---
   {
     title: 'Home Row Anchor: F & J',
@@ -592,13 +590,13 @@ const LEVEL_DEFINITIONS: readonly LevelInfo[] = deepFreeze([
     targetAccuracy: 95,
     timeLimit: 30,
   },
-]);
+];
 
 export function getLevelConfig(level: number): LevelConfig {
   const currentLevel = Math.min(Math.max(1, Math.floor(level || 1)), 50);
   const def = LEVEL_DEFINITIONS[currentLevel - 1] || LEVEL_DEFINITIONS[0];
 
-  return deepFreeze({
+  return {
     level: currentLevel,
     title: def.title,
     category: def.category,
@@ -608,7 +606,7 @@ export function getLevelConfig(level: number): LevelConfig {
     targetAccuracy: def.targetAccuracy,
     timeLimit: def.timeLimit,
     wordBank: def.samplePattern,
-  });
+  };
 }
 
 export function generateLevelText(levelConfig: LevelConfig, wordCount: number = 20): string {

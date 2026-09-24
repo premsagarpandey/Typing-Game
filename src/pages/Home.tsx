@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Keyboard, Timer, ShieldCheck } from 'lucide-react';
+import { Keyboard, Timer, BarChart2 } from 'lucide-react';
 import FingerPlacementModal from '../components/common/FingerPlacementModal';
 import FingerPlacementTutorial from '../components/common/FingerPlacementTutorial';
 import { secureStorage } from '../utils/secureStorage';
@@ -123,9 +123,9 @@ export default function Home() {
         </div>
 
         <div className="p-5 bg-neutral-50 dark:bg-neutral-950 text-left">
-          <ShieldCheck className="w-4 h-4 text-neutral-400 dark:text-neutral-500 mb-3" strokeWidth={1.5} />
-          <h3 className="font-semibold text-neutral-900 dark:text-neutral-100 text-sm mb-1">Verified Metrics</h3>
-          <p className="text-neutral-500 dark:text-neutral-500 text-xs leading-relaxed">Anti-cheat ensures genuine WPM and accuracy.</p>
+          <BarChart2 className="w-4 h-4 text-neutral-400 dark:text-neutral-500 mb-3" strokeWidth={1.5} />
+          <h3 className="font-semibold text-neutral-900 dark:text-neutral-100 text-sm mb-1">Detailed Analytics</h3>
+          <p className="text-neutral-500 dark:text-neutral-500 text-xs leading-relaxed">Track your WPM, accuracy, and keystroke progression.</p>
         </div>
       </div>
 

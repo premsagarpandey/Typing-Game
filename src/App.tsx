@@ -1,13 +1,11 @@
-import { useEffect, Suspense, lazy } from 'react';
+import { Suspense, lazy } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import Navbar from './components/layout/Navbar';
 import Home from './pages/Home';
 import Game from './pages/Game';
 import ErrorBoundary from './components/common/ErrorBoundary';
-import SecurityToast from './components/common/SecurityToast';
+import GlobalToast from './components/common/GlobalToast';
 import { ThemeProvider } from './context/ThemeContext';
-import { initSecuritySuite } from './utils/security';
-
 import { AuthProvider } from './context/AuthContext';
 
 const Stats = lazy(() => import('./pages/Stats'));
@@ -49,16 +47,12 @@ function AppLayout() {
           <span>© {new Date().getFullYear()} Typlix · Minimalist & Fast Touch Typing</span>
         </footer>
       )}
-      <SecurityToast />
+      <GlobalToast />
     </div>
   );
 }
 
 export default function App() {
-  useEffect(() => {
-    initSecuritySuite();
-  }, []);
-
   return (
     <ErrorBoundary>
       <AuthProvider>

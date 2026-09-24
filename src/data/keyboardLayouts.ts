@@ -1,5 +1,3 @@
-import { deepFreeze } from '../utils/security';
-
 export type KeyboardLayoutId = 'qwerty' | 'dvorak' | 'colemak' | 'azerty';
 
 export interface KeyItem {
@@ -414,7 +412,7 @@ const AZERTY_FINGER_MAP: Record<string, FingerInfo> = {
   ' ': { hand: 'Right', finger: 'Thumb', color: COLORS.thumb },
 };
 
-export const KEYBOARD_LAYOUTS: Record<KeyboardLayoutId, KeyboardLayoutDef> = deepFreeze({
+export const KEYBOARD_LAYOUTS: Record<KeyboardLayoutId, KeyboardLayoutDef> = {
   qwerty: {
     id: 'qwerty',
     name: 'QWERTY',
@@ -459,7 +457,7 @@ export const KEYBOARD_LAYOUTS: Record<KeyboardLayoutId, KeyboardLayoutDef> = dee
     rows: AZERTY_ROWS,
     fingerMap: AZERTY_FINGER_MAP,
   },
-});
+};
 
 export function getKeyboardLayout(layoutId: KeyboardLayoutId = 'qwerty'): KeyboardLayoutDef {
   return KEYBOARD_LAYOUTS[layoutId] || KEYBOARD_LAYOUTS.qwerty;

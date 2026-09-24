@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '../hooks/useAuth';
 import { secureStorage, type TypingSessionRecord } from '../utils/secureStorage';
 import { LogOut, User, Mail, Calendar, Shield, Activity, TrendingUp, Trophy } from 'lucide-react';
 
@@ -8,23 +8,6 @@ export default function Profile() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
-
-  // If user accesses /profile without logging in, this acts as a fallback.
-  // Ideally, protected route would handle this.
-  if (!user) {
-    return (
-      <div className="max-w-xl mx-auto py-16 text-center space-y-4">
-        <h2 className="text-xl font-semibold text-neutral-900 dark:text-neutral-100">Not Signed In</h2>
-        <p className="text-sm text-neutral-500">Please sign in to view your profile.</p>
-        <button
-          onClick={() => navigate('/')}
-          className="px-4 py-2 mt-4 text-sm font-medium rounded-md bg-neutral-900 dark:bg-neutral-100 text-white dark:text-neutral-900 transition-opacity hover:opacity-90 cursor-pointer"
-        >
-          Go Home
-        </button>
-      </div>
-    );
-  }
 
   const sessions = useMemo(() => {
     return secureStorage.getItem<TypingSessionRecord[]>('typlix_stats', []);
@@ -45,6 +28,22 @@ export default function Profile() {
     );
     return { total, bestWpm, avgAccuracy };
   }, [sessions]);
+
+  // If user accesses /profile without logging in, render fallback prompt
+  if (!user) {
+    return (
+      <div className="max-w-xl mx-auto py-16 text-center space-y-4">
+        <h2 className="text-xl font-semibold text-neutral-900 dark:text-neutral-100">Not Signed In</h2>
+        <p className="text-sm text-neutral-500">Please sign in to view your profile.</p>
+        <button
+          onClick={() => navigate('/')}
+          className="px-4 py-2 mt-4 text-sm font-medium rounded-md bg-neutral-900 dark:bg-neutral-100 text-white dark:text-neutral-900 transition-opacity hover:opacity-90 cursor-pointer"
+        >
+          Go Home
+        </button>
+      </div>
+    );
+  }
 
   const handleLogout = async () => {
     try {

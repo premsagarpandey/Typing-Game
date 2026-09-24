@@ -8,7 +8,6 @@ import type { QuoteCategory } from '../data/quotes';
 import { getRandomSnippet } from '../data/codeSnippets';
 import type { CodeLanguage } from '../data/codeSnippets';
 import type { Difficulty } from '../data/quotes';
-import { antiCheatEngine } from '../utils/antiCheat';
 import { secureStorage, type TypingSessionRecord } from '../utils/secureStorage';
 
 import { playKeystrokeSound as playSound } from '../utils/soundEngine';
@@ -64,7 +63,6 @@ export function useTypingGame(
 
   const [typedText, setTypedText] = useState('');
   const [shakeTrigger, setShakeTrigger] = useState(0);
-  const [securityFlag, setSecurityFlag] = useState<string | null>(null);
 
   // Stats
   const [combo, setCombo] = useState(0);
@@ -78,16 +76,39 @@ export function useTypingGame(
   const levelConfigRef = useRef(levelConfig);
   const modeRef = useRef(currentMode);
   const modeLabelRef = useRef(modeLabel);
+  const statusRef = useRef<GameStatus>(status);
+  const typedTextRef = useRef(typedText);
+  const targetTextRef = useRef(targetText);
+  const timeRemainingRef = useRef(timeRemaining);
+  const actualInitialTimeRef = useRef(actualInitialTime);
+  const startTimeRef = useRef<number | null>(null);
 
-  // Keep refs in sync for reliable timer reads
+  // Keep refs in sync for reliable callbacks & timer reads
   useEffect(() => {
+    statusRef.current = status;
+    typedTextRef.current = typedText;
+    targetTextRef.current = targetText;
+    timeRemainingRef.current = timeRemaining;
+    actualInitialTimeRef.current = actualInitialTime;
     correctCharsRef.current = correctChars;
     totalCharsTypedRef.current = totalCharsTyped;
     maxComboRef.current = maxCombo;
     levelConfigRef.current = levelConfig;
     modeRef.current = currentMode;
     modeLabelRef.current = modeLabel;
-  }, [correctChars, totalCharsTyped, maxCombo, levelConfig, currentMode, modeLabel]);
+  }, [
+    status,
+    typedText,
+    targetText,
+    timeRemaining,
+    actualInitialTime,
+    correctChars,
+    totalCharsTyped,
+    maxCombo,
+    levelConfig,
+    currentMode,
+    modeLabel,
+  ]);
 
   // Unified session completion logic
   const completeSession = useCallback(
@@ -96,15 +117,10 @@ export function useTypingGame(
       const currentConfig = levelConfigRef.current;
       const finalWpm = calculateWPM(correctCount, spentSeconds);
       const finalAcc = calculateAccuracy(correctCount, totalTypedCount);
-      const isScoreValid = antiCheatEngine.validateSessionScore(finalWpm, finalAcc, spentSeconds);
 
       let newStatus: GameStatus = 'finished';
-      let flagReason: string | null = null;
 
-      if (!isScoreValid || antiCheatEngine.getState().isFlagged) {
-        flagReason = antiCheatEngine.getState().reason || 'Anti-cheat policy violation';
-        newStatus = 'failed';
-      } else if (mode === 'lesson' && currentConfig) {
+      if (mode === 'lesson' && currentConfig) {
         if (finalWpm >= currentConfig.targetWpm && finalAcc >= currentConfig.targetAccuracy) {
           newStatus = 'passed';
         } else {
@@ -114,11 +130,11 @@ export function useTypingGame(
         newStatus = 'passed';
       }
 
-      setSecurityFlag(flagReason);
       setStatus(newStatus);
+      statusRef.current = newStatus;
 
-      // Record session in secure storage for real stats tracking
-      if (!flagReason && totalTypedCount > 0) {
+      // Record session in storage for stats tracking
+      if (totalTypedCount > 0) {
         try {
           const existing = secureStorage.getItem<TypingSessionRecord[]>('typlix_stats', []);
           const label =
@@ -126,7 +142,7 @@ export function useTypingGame(
             (mode === 'lesson'
               ? `Level ${currentConfig?.level || 1}`
               : mode === 'timed'
-              ? `Timed (${actualInitialTime}s)`
+              ? `Timed (${actualInitialTimeRef.current}s)`
               : 'Custom Text');
 
           const record: TypingSessionRecord = {
@@ -151,7 +167,7 @@ export function useTypingGame(
         }
       }
     },
-    [actualInitialTime]
+    []
   );
 
   // Timer: Decrements timeRemaining and finishes game when time runs out
@@ -163,7 +179,10 @@ export function useTypingGame(
         if (prev <= 1) {
           clearInterval(interval);
           setTimeout(() => {
-            completeSession(actualInitialTime, correctCharsRef.current, totalCharsTypedRef.current);
+            const totalElapsed = startTimeRef.current
+              ? Math.max(1, (performance.now() - startTimeRef.current) / 1000)
+              : actualInitialTimeRef.current;
+            completeSession(totalElapsed, correctCharsRef.current, totalCharsTypedRef.current);
           }, 0);
           return 0;
         }
@@ -172,7 +191,7 @@ export function useTypingGame(
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [status, actualInitialTime, completeSession]);
+  }, [status, completeSession]);
 
   // Derived WPM and Accuracy
   const timeElapsed = Math.max(1, actualInitialTime - timeRemaining);
@@ -182,36 +201,39 @@ export function useTypingGame(
     [correctChars, totalCharsTyped]
   );
 
+  // Highly-optimized stable handleInput: never recreates on keystrokes
   const handleInput = useCallback(
     (value: string) => {
-      if (status === 'finished' || status === 'passed' || status === 'failed') return;
+      const currentStatus = statusRef.current;
+      if (currentStatus === 'finished' || currentStatus === 'passed' || currentStatus === 'failed') return;
 
-      const isValidInput = antiCheatEngine.validateInput(typedText, value);
-      if (!isValidInput) {
-        playSound('error');
-        setShakeTrigger((prev) => prev + 1);
-        setSecurityFlag(antiCheatEngine.getState().reason);
-        return;
-      }
-
-      if (status === 'idle') {
+      if (currentStatus === 'idle') {
         setStatus('playing');
+        statusRef.current = 'playing';
+        startTimeRef.current = performance.now();
       }
 
+      const prevTyped = typedTextRef.current;
+      const currentTarget = targetTextRef.current;
+      typedTextRef.current = value;
       setTypedText(value);
 
       const lastCharIndex = value.length - 1;
-      const isCorrect = value[lastCharIndex] === targetText[lastCharIndex];
-      let newTotalTyped = totalCharsTyped;
+      const isCorrect = value[lastCharIndex] === currentTarget[lastCharIndex];
+      let newTotalTyped = totalCharsTypedRef.current;
 
-      if (value.length > typedText.length) {
-        newTotalTyped = totalCharsTyped + 1;
+      if (value.length > prevTyped.length) {
+        newTotalTyped = totalCharsTypedRef.current + 1;
+        totalCharsTypedRef.current = newTotalTyped;
         setTotalCharsTyped(newTotalTyped);
         if (isCorrect) {
           playSound('correct');
           setCombo((prev) => {
             const newCombo = prev + 1;
-            setMaxCombo((max) => Math.max(max, newCombo));
+            if (newCombo > maxComboRef.current) {
+              maxComboRef.current = newCombo;
+              setMaxCombo(newCombo);
+            }
             return newCombo;
           });
         } else {
@@ -223,54 +245,68 @@ export function useTypingGame(
 
       let currentCorrect = 0;
       for (let i = 0; i < value.length; i++) {
-        if (value[i] === targetText[i]) currentCorrect++;
+        if (value[i] === currentTarget[i]) currentCorrect++;
       }
+      correctCharsRef.current = currentCorrect;
       setCorrectChars(currentCorrect);
 
       // In timed mode: automatically append more words when approaching the end
-      if (modeRef.current === 'timed' && value.length >= targetText.length - 20) {
-        setTargetText((prev) => prev + ' ' + generateTimedWords(30));
+      if (modeRef.current === 'timed' && value.length >= currentTarget.length - 20) {
+        const additional = ' ' + generateTimedWords(30);
+        targetTextRef.current = currentTarget + additional;
+        setTargetText((prev) => prev + additional);
       }
 
       // If all target text is completed in lesson or custom mode, finish immediately
-      if (modeRef.current !== 'timed' && value.length >= targetText.length && targetText.length > 0) {
-        const timeSpent = Math.max(1, actualInitialTime - timeRemaining);
-        completeSession(timeSpent, currentCorrect, newTotalTyped);
+      if (modeRef.current !== 'timed' && value.length >= currentTarget.length && currentTarget.length > 0) {
+        const elapsedSeconds = startTimeRef.current
+          ? Math.max(1, (performance.now() - startTimeRef.current) / 1000)
+          : Math.max(1, actualInitialTimeRef.current - timeRemainingRef.current);
+        completeSession(elapsedSeconds, currentCorrect, newTotalTyped);
       }
     },
-    [status, typedText, targetText, actualInitialTime, timeRemaining, totalCharsTyped, completeSession]
+    [completeSession]
   );
 
   const resetGame = useCallback(
     (newConfig?: LevelConfig, newCustomText?: string) => {
       const mode = modeRef.current;
       const config = newConfig || levelConfigRef.current;
-      antiCheatEngine.reset();
       setStatus('idle');
-      setTimeRemaining(mode === 'lesson' && config ? config.timeLimit : actualInitialTime);
+      statusRef.current = 'idle';
+      startTimeRef.current = null;
+      const nextTime = mode === 'lesson' && config ? config.timeLimit : actualInitialTimeRef.current;
+      setTimeRemaining(nextTime);
+      timeRemainingRef.current = nextTime;
       setTypedText('');
+      typedTextRef.current = '';
       setCombo(0);
       setMaxCombo(0);
+      maxComboRef.current = 0;
       setCorrectChars(0);
+      correctCharsRef.current = 0;
       setTotalCharsTyped(0);
-      setSecurityFlag(null);
+      totalCharsTypedRef.current = 0;
 
+      let newTarget = '';
       if (mode === 'lesson') {
         if (config) {
-          setTargetText(generateLevelText(config, 25));
+          newTarget = generateLevelText(config, 25);
         }
       } else if (mode === 'custom') {
         const textToUse = newCustomText !== undefined ? newCustomText : customText;
-        setTargetText(textToUse.trim() || 'Type something here...');
+        newTarget = textToUse.trim() || 'Type something here...';
       } else if (mode === 'quotes') {
-        setTargetText(getRandomQuote(quoteCategory, quoteDifficulty).text);
+        newTarget = getRandomQuote(quoteCategory, quoteDifficulty).text;
       } else if (mode === 'code') {
-        setTargetText(getRandomSnippet(codeLanguage, codeDifficulty).code);
+        newTarget = getRandomSnippet(codeLanguage, codeDifficulty).code;
       } else {
-        setTargetText(generateTimedWords(60));
+        newTarget = generateTimedWords(60);
       }
+      targetTextRef.current = newTarget;
+      setTargetText(newTarget);
     },
-    [actualInitialTime, customText, quoteCategory, quoteDifficulty, codeLanguage, codeDifficulty]
+    [customText, quoteCategory, quoteDifficulty, codeLanguage, codeDifficulty]
   );
 
   return {
@@ -283,7 +319,6 @@ export function useTypingGame(
     combo,
     maxCombo,
     shakeTrigger,
-    securityFlag,
     handleInput,
     resetGame,
     setTargetText,

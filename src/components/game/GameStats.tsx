@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import type { GameMode } from '../../hooks/useTypingGame';
 
 interface GameStatsProps {
@@ -20,7 +21,7 @@ interface GameStatsProps {
   onOpenCustomModal?: () => void;
 }
 
-export default function GameStats({
+function GameStatsComponent({
   timeRemaining,
   wpm,
   accuracy,
@@ -202,4 +203,6 @@ export default function GameStats({
     </div>
   );
 }
+
+export default memo(GameStatsComponent);
 

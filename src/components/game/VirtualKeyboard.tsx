@@ -1,3 +1,4 @@
+import { memo, useMemo } from 'react';
 import { useLocalStorage } from '../../hooks/useLocalStorage';
 import {
   getKeyboardLayout,
@@ -11,12 +12,12 @@ interface VirtualKeyboardProps {
   showLayoutPicker?: boolean;
 }
 
-export default function VirtualKeyboard({ nextChar, showLayoutPicker = true }: VirtualKeyboardProps) {
+function VirtualKeyboardComponent({ nextChar, showLayoutPicker = true }: VirtualKeyboardProps) {
   const [layoutId, setLayoutId] = useLocalStorage<KeyboardLayoutId>('keyboardLayout', 'qwerty');
-  const layout = getKeyboardLayout(layoutId);
+  const layout = useMemo(() => getKeyboardLayout(layoutId), [layoutId]);
 
   const targetChar = nextChar || '';
-  const fingerInfo = getFingerInfoForLayout(targetChar, layoutId);
+  const fingerInfo = useMemo(() => getFingerInfoForLayout(targetChar, layoutId), [targetChar, layoutId]);
   const lowerTarget = targetChar.toLowerCase();
 
   return (
@@ -122,3 +123,5 @@ export default function VirtualKeyboard({ nextChar, showLayoutPicker = true }: V
     </div>
   );
 }
+
+export default memo(VirtualKeyboardComponent);

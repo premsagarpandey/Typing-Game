@@ -8,5 +8,5 @@ export function calculateWPM(correctChars: number, timeElapsedSeconds: number): 
 
 export function calculateAccuracy(correctChars: number, totalCharsTyped: number): number {
   if (totalCharsTyped <= 0) return 100;
-  return Math.round((correctChars / totalCharsTyped) * 100);
+  return Math.min(100, Math.max(0, Math.round((correctChars / totalCharsTyped) * 100)));
 }

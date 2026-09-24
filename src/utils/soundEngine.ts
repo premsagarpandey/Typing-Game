@@ -199,10 +199,55 @@ const PROFILE_CONFIGS: Record<SoundProfileId, SoundProfileConfig> = {
   },
 };
 
-// ─── Sound Engine ────────────────────────────────────────────────────────────
+// ─── Sound Engine & High-Performance Audio Cache ─────────────────────────────
 
 let audioCtx: AudioContext | null = null;
 let masterGain: GainNode | null = null;
+let cachedNoiseBuffer: AudioBuffer | null = null;
+
+// In-memory cache of user audio settings to eliminate synchronous localStorage reads on keystroke
+let cachedSoundEnabled = true;
+let cachedProfileId: SoundProfileId = 'cherry-mx-blue';
+let cachedSoundVolume = 70;
+let settingsInitialized = false;
+
+function initCachedSettings(): void {
+  if (typeof window === 'undefined' || settingsInitialized) return;
+  settingsInitialized = true;
+  try {
+    cachedSoundEnabled = secureStorage.getItem<boolean>('sound', true);
+    cachedProfileId = secureStorage.getItem<SoundProfileId>('soundProfile', 'cherry-mx-blue');
+    cachedSoundVolume = secureStorage.getItem<number>('soundVolume', 70);
+
+    // Sync on external storage changes (or across tabs)
+    window.addEventListener('storage', (e) => {
+      if (e.key === 'sound' || e.key === 'soundProfile' || e.key === 'soundVolume') {
+        settingsInitialized = false;
+        initCachedSettings();
+      }
+    });
+
+    window.addEventListener('typlix_settings_changed', () => {
+      settingsInitialized = false;
+      initCachedSettings();
+    });
+  } catch {
+    // fallback to defaults
+  }
+}
+
+/**
+ * Updates in-memory sound settings immediately without waiting for storage events.
+ */
+export function updateSoundSettings(settings: {
+  sound?: boolean;
+  soundProfile?: SoundProfileId;
+  soundVolume?: number;
+}): void {
+  if (settings.sound !== undefined) cachedSoundEnabled = settings.sound;
+  if (settings.soundProfile !== undefined) cachedProfileId = settings.soundProfile;
+  if (settings.soundVolume !== undefined) cachedSoundVolume = settings.soundVolume;
+}
 
 function getAudioContext(): { ctx: AudioContext; master: GainNode } | null {
   try {
@@ -224,24 +269,27 @@ function getAudioContext(): { ctx: AudioContext; master: GainNode } | null {
 }
 
 /**
- * Create a short noise burst via an AudioBuffer filled with random samples.
+ * Pre-generate a 1-second white noise AudioBuffer once and reuse across keystrokes.
+ * Prevents GC thrashing and micro-stutters during fast typing.
  */
-function createNoiseSource(ctx: AudioContext, duration: number): AudioBufferSourceNode {
+function getOrCreateNoiseBuffer(ctx: AudioContext): AudioBuffer {
+  if (cachedNoiseBuffer && cachedNoiseBuffer.sampleRate === ctx.sampleRate) {
+    return cachedNoiseBuffer;
+  }
   const sampleRate = ctx.sampleRate;
-  const bufferSize = Math.max(1, Math.floor(sampleRate * duration));
+  const bufferSize = sampleRate; // 1 second of noise
   const buffer = ctx.createBuffer(1, bufferSize, sampleRate);
   const data = buffer.getChannelData(0);
   for (let i = 0; i < bufferSize; i++) {
     data[i] = Math.random() * 2 - 1;
   }
-  const source = ctx.createBufferSource();
-  source.buffer = buffer;
-  return source;
+  cachedNoiseBuffer = buffer;
+  return cachedNoiseBuffer;
 }
 
 /**
  * Synthesize a keystroke sound based on the given profile config.
- * Uses layered oscillators + optional filtered noise burst.
+ * Uses layered oscillators + pre-cached filtered noise burst.
  */
 function synthesize(
   config: SoundProfileConfig['keydown'],
@@ -253,7 +301,7 @@ function synthesize(
   const { ctx, master } = audio;
   const now = ctx.currentTime;
 
-  // Update master volume
+  // Master volume
   master.gain.setValueAtTime(volumeMultiplier, now);
 
   // Add slight random variation for realism
@@ -261,7 +309,8 @@ function synthesize(
   const gainVariation = 1 + (Math.random() - 0.5) * 0.1;  // ±5%
 
   // --- Oscillator layers ---
-  for (const layer of config.oscillators) {
+  for (let i = 0; i < config.oscillators.length; i++) {
+    const layer = config.oscillators[i];
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();
 
@@ -289,10 +338,14 @@ function synthesize(
     osc.stop(now + layer.duration + 0.01);
   }
 
-  // --- Noise layer ---
+  // --- Noise layer (reusing pre-cached buffer) ---
   if (config.noise) {
     const nl = config.noise;
-    const noise = createNoiseSource(ctx, nl.duration);
+    const noiseBuffer = getOrCreateNoiseBuffer(ctx);
+    const source = ctx.createBufferSource();
+    source.buffer = noiseBuffer;
+    source.loop = true;
+
     const noiseGain = ctx.createGain();
     const noiseFilter = ctx.createBiquadFilter();
 
@@ -305,36 +358,35 @@ function synthesize(
     noiseGain.gain.linearRampToValueAtTime(noisePeakGain, now + nl.attack);
     noiseGain.gain.exponentialRampToValueAtTime(0.001, now + nl.attack + nl.decay);
 
-    noise.connect(noiseFilter);
+    source.connect(noiseFilter);
     noiseFilter.connect(noiseGain);
     noiseGain.connect(master);
 
-    noise.start(now);
-    noise.stop(now + nl.duration + 0.01);
+    // Random start offset in the 1-second noise buffer
+    const offset = Math.random() * 0.7;
+    source.start(now, offset);
+    source.stop(now + nl.duration + 0.01);
   }
 }
 
 // ─── Public API ──────────────────────────────────────────────────────────────
 
 /**
- * Play a keystroke sound using the user's selected profile and volume.
- * Reads settings from secureStorage for consistency with the Settings page.
+ * Play a keystroke sound with zero-allocation, zero-blocking in-memory preferences.
  */
 export function playKeystrokeSound(type: 'correct' | 'error'): void {
   if (typeof window === 'undefined') return;
 
-  // Check if sound is enabled
-  const soundEnabled = secureStorage.getItem<boolean>('sound', true);
-  if (!soundEnabled) return;
+  if (!settingsInitialized) {
+    initCachedSettings();
+  }
 
-  // Get user preferences
-  const profileId = secureStorage.getItem<SoundProfileId>('soundProfile', 'cherry-mx-blue');
-  const volume = secureStorage.getItem<number>('soundVolume', 70);
+  if (!cachedSoundEnabled) return;
 
-  const config = PROFILE_CONFIGS[profileId];
+  const config = PROFILE_CONFIGS[cachedProfileId];
   if (!config) return;
 
-  const volumeMultiplier = Math.max(0, Math.min(volume, 100)) / 100;
+  const volumeMultiplier = Math.max(0, Math.min(cachedSoundVolume, 100)) / 100;
   if (volumeMultiplier <= 0) return;
 
   const soundConfig = type === 'correct' ? config.keydown : config.error;
@@ -348,11 +400,13 @@ export function playKeystrokeSound(type: 'correct' | 'error'): void {
 export function previewProfileSound(profileId: SoundProfileId): void {
   if (typeof window === 'undefined') return;
 
+  if (!settingsInitialized) {
+    initCachedSettings();
+  }
+
   const config = PROFILE_CONFIGS[profileId];
   if (!config) return;
 
-  const volume = secureStorage.getItem<number>('soundVolume', 70);
-  const volumeMultiplier = Math.max(0, Math.min(volume, 100)) / 100;
-
+  const volumeMultiplier = Math.max(0, Math.min(cachedSoundVolume, 100)) / 100;
   synthesize(config.keydown, Math.max(volumeMultiplier, 0.3)); // Minimum preview volume
 }

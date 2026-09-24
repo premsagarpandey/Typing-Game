@@ -1,8 +1,5 @@
-import { useRef, useEffect, useMemo, useState, useCallback } from 'react';
-import { motion, useAnimation } from 'framer-motion';
+import { useRef, useEffect, useMemo, useState, useCallback, memo } from 'react';
 import type { GameStatus } from '../../hooks/useTypingGame';
-import { antiCheatEngine } from '../../utils/antiCheat';
-import { antiInspectManager } from '../../utils/antiInspect';
 import CapsLockWarningModal from '../common/CapsLockWarningModal';
 import { useLocalStorage } from '../../hooks/useLocalStorage';
 
@@ -11,7 +8,6 @@ interface TypingAreaProps {
   typedText: string;
   status: GameStatus;
   shakeTrigger: number;
-  securityFlag?: string | null;
   onInput: (value: string) => void;
 }
 
@@ -32,10 +28,12 @@ function tokenize(text: string) {
   return tokens;
 }
 
+// Cached measure canvas to avoid DOM creation on every line break calculation
+let cachedMeasureCtx: CanvasRenderingContext2D | null = null;
+
 /**
  * Given word tokens and a container width, compute which tokens belong to each
- * visual line.  Uses a canvas-based measurement so we don't need the DOM to be
- * mounted yet (avoids flicker).
+ * visual line. Uses a cached canvas context for zero-allocation text measurement.
  */
 function computeLines(
   tokens: { text: string; startIndex: number }[],
@@ -45,16 +43,20 @@ function computeLines(
 ): { text: string; startIndex: number }[][] {
   if (containerWidth <= 0 || tokens.length === 0) return [];
 
-  // Use OffscreenCanvas / fallback Canvas for text measurement
-  const canvas = document.createElement('canvas');
-  const ctx = canvas.getContext('2d')!;
+  if (typeof document !== 'undefined' && !cachedMeasureCtx) {
+    const canvas = document.createElement('canvas');
+    cachedMeasureCtx = canvas.getContext('2d');
+  }
+  const ctx = cachedMeasureCtx;
+  if (!ctx) return [];
   ctx.font = `${fontSize}px ${font}`;
 
   const lines: { text: string; startIndex: number }[][] = [];
   let currentLine: { text: string; startIndex: number }[] = [];
   let lineWidth = 0;
 
-  for (const token of tokens) {
+  for (let i = 0; i < tokens.length; i++) {
+    const token = tokens[i];
     const tokenWidth = ctx.measureText(token.text).width;
 
     // If this token alone exceeds the line AND we already have content, wrap.
@@ -72,22 +74,21 @@ function computeLines(
   return lines;
 }
 
-export default function TypingArea({
+function TypingAreaComponent({
   targetText,
   typedText,
   status,
   shakeTrigger,
-  securityFlag,
   onInput,
 }: TypingAreaProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
-  const controls = useAnimation();
 
   // Caps Lock state & warning modal control
   const [capsLockOn, setCapsLockOn] = useState(false);
-  const [isModalDismissed, setIsModalDismissed] = useState(false);
+  const [isModalOpen, setIsModalOpen] = useState(false);
   const [autoFixCapsLock, setAutoFixCapsLock] = useLocalStorage<boolean>('typlix_capslock_autofix', true);
+  const [isShaking, setIsShaking] = useState(false);
 
   // Stable refs for event listeners
   const typedTextRef = useRef(typedText);
@@ -95,26 +96,16 @@ export default function TypingArea({
   const statusRef = useRef(status);
   const capsLockOnRef = useRef(capsLockOn);
   const autoFixCapsLockRef = useRef(autoFixCapsLock);
+  const onInputRef = useRef(onInput);
 
   useEffect(() => {
     typedTextRef.current = typedText;
-  }, [typedText]);
-
-  useEffect(() => {
     targetTextRef.current = targetText;
-  }, [targetText]);
-
-  useEffect(() => {
     statusRef.current = status;
-  }, [status]);
-
-  useEffect(() => {
     capsLockOnRef.current = capsLockOn;
-  }, [capsLockOn]);
-
-  useEffect(() => {
     autoFixCapsLockRef.current = autoFixCapsLock;
-  }, [autoFixCapsLock]);
+    onInputRef.current = onInput;
+  }, [typedText, targetText, status, capsLockOn, autoFixCapsLock, onInput]);
 
   // Container width for line computation
   const [containerWidth, setContainerWidth] = useState(0);
@@ -125,7 +116,6 @@ export default function TypingArea({
     if (!el) return;
 
     const measure = () => {
-      // Account for padding (p-6 = 24px each side on sm, p-8 = 32px)
       const style = getComputedStyle(el);
       const paddingLeft = parseFloat(style.paddingLeft) || 0;
       const paddingRight = parseFloat(style.paddingRight) || 0;
@@ -139,15 +129,17 @@ export default function TypingArea({
     return () => ro.disconnect();
   }, []);
 
-  // Shake on error
+  // Hardware-accelerated CSS shake on error (zero Framer Motion JS overhead)
   useEffect(() => {
     if (shakeTrigger > 0) {
-      controls.start({
-        x: [0, -6, 6, -4, 4, 0],
-        transition: { duration: 0.25 },
-      });
+      const frameId = requestAnimationFrame(() => setIsShaking(true));
+      const timer = setTimeout(() => setIsShaking(false), 240);
+      return () => {
+        cancelAnimationFrame(frameId);
+        clearTimeout(timer);
+      };
     }
-  }, [shakeTrigger, controls]);
+  }, [shakeTrigger]);
 
   // Multi-layered Caps Lock Detection (getModifierState + key case heuristic)
   const updateCapsLockState = useCallback(
@@ -164,11 +156,9 @@ export default function TypingArea({
         }
       }
 
-      if (detected !== null) {
+      if (detected !== null && detected !== capsLockOnRef.current) {
         setCapsLockOn(detected);
-        if (!detected) {
-          setIsModalDismissed(false); // Reset dismissal when Caps Lock is toggled off
-        }
+        capsLockOnRef.current = detected;
       }
     },
     []
@@ -188,18 +178,12 @@ export default function TypingArea({
       if (document.activeElement !== el) {
         el.focus({ preventScroll: true });
       }
-      try {
-        const len = el.value.length;
-        el.setSelectionRange(len, len);
-      } catch {
-        // ignore
-      }
     };
 
     // Initial focus
     const timer = setTimeout(focusInput, 20);
 
-    // Global keydown: captures EVERY typing key directly so typing NEVER stops or misses
+    // Global keydown: captures EVERY typing key directly using stable refs
     const handleWindowKeyDown = (e: KeyboardEvent) => {
       updateCapsLockState(e);
 
@@ -214,17 +198,15 @@ export default function TypingArea({
 
       // System shortcuts (Ctrl, Alt, Meta)
       if (e.ctrlKey || e.metaKey || e.altKey) {
-        // Support Ctrl+Backspace to delete the previous word cleanly
         if (e.ctrlKey && e.key === 'Backspace') {
           e.preventDefault();
           const currentTyped = typedTextRef.current;
           const trimmed = currentTyped.trimEnd();
           const lastSpace = trimmed.lastIndexOf(' ');
           const nextVal = lastSpace >= 0 ? trimmed.slice(0, lastSpace + 1) : '';
-          onInput(nextVal);
+          onInputRef.current(nextVal);
           if (inputRef.current) {
             inputRef.current.value = nextVal;
-            inputRef.current.setSelectionRange(nextVal.length, nextVal.length);
           }
         }
         return;
@@ -236,13 +218,11 @@ export default function TypingArea({
         const currentTyped = typedTextRef.current;
         if (currentTyped.length > 0) {
           const nextVal = currentTyped.slice(0, -1);
-          onInput(nextVal);
+          onInputRef.current(nextVal);
           if (inputRef.current) {
             inputRef.current.value = nextVal;
-            inputRef.current.setSelectionRange(nextVal.length, nextVal.length);
           }
         }
-        focusInput();
         return;
       }
 
@@ -254,7 +234,7 @@ export default function TypingArea({
 
       // Printable single character keystroke (letters, numbers, space, punctuation)
       if (e.key.length === 1) {
-        e.preventDefault(); // Prevents Space from scrolling the page, prevents duplicate input
+        e.preventDefault(); // Prevents Space from scrolling the page
         focusInput();
 
         let charToType = e.key;
@@ -270,10 +250,9 @@ export default function TypingArea({
         }
 
         const nextVal = currentTyped + charToType;
-        onInput(nextVal);
+        onInputRef.current(nextVal);
         if (inputRef.current) {
           inputRef.current.value = nextVal;
-          inputRef.current.setSelectionRange(nextVal.length, nextVal.length);
         }
       }
     };
@@ -286,17 +265,12 @@ export default function TypingArea({
       updateCapsLockState(e);
     };
 
-    // Re-focus when the hidden input loses focus
+    // Re-focus when the hidden input loses focus or window regains focus
     const handleBlur = () => setTimeout(focusInput, 15);
-
-    // Re-focus when the browser tab/window regains focus
     const handleWindowFocus = () => setTimeout(focusInput, 30);
     const handleVisibility = () => {
       if (document.visibilityState === 'visible') setTimeout(focusInput, 50);
     };
-
-    // Periodic focus check
-    const focusInterval = setInterval(focusInput, 1200);
 
     const el = inputRef.current;
     el?.addEventListener('blur', handleBlur);
@@ -308,7 +282,6 @@ export default function TypingArea({
 
     return () => {
       clearTimeout(timer);
-      clearInterval(focusInterval);
       el?.removeEventListener('blur', handleBlur);
       window.removeEventListener('focus', handleWindowFocus);
       window.removeEventListener('keydown', handleWindowKeyDown, true);
@@ -316,11 +289,10 @@ export default function TypingArea({
       window.removeEventListener('pointerdown', handlePointerDown, true);
       document.removeEventListener('visibilitychange', handleVisibility);
     };
-  }, [status, onInput, updateCapsLockState]);
+  }, [status, updateCapsLockState]);
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     updateCapsLockState(e);
-    antiCheatEngine.handleKeyEvent(e);
   };
 
   const handleKeyUp = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -342,22 +314,19 @@ export default function TypingArea({
       }
     }
 
-    onInput(finalVal);
+    onInputRef.current(finalVal);
   };
 
   const handlePaste = (e: React.ClipboardEvent) => {
     e.preventDefault();
-    antiInspectManager.notify('paste', 'Direct paste / clipboard injection blocked for session integrity.');
   };
 
   const handleCopy = (e: React.ClipboardEvent) => {
     e.preventDefault();
-    antiInspectManager.notify('tamper', 'Copying prompt text is restricted during typing tests.');
   };
 
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
-    antiInspectManager.notify('tamper', 'Drag-and-drop text injection blocked.');
   };
 
   // Tokenize text
@@ -386,17 +355,13 @@ export default function TypingArea({
   }, [lines, typedText.length]);
 
   // The "scroll offset" line – the first visible line index.
-  // We keep the active line at position 0 (top) of the 3-line window,
-  // but only start scrolling once the user has finished line 0.
   const scrollLineIndex = useMemo(() => {
-    // Keep line 0 visible at start; once caret reaches line 1+, scroll so
-    // the active line is always the top visible line.
     if (activeLineIndex <= 0) return 0;
     return activeLineIndex;
   }, [activeLineIndex]);
 
   // Line height in px – we use this for the scroll transform
-  const lineHeightPx = Math.round(fontSize * 1.85); // comfortable, modern monospace line height
+  const lineHeightPx = Math.round(fontSize * 1.85);
 
   // Focus handler
   const handleContainerClick = useCallback(() => {
@@ -409,15 +374,15 @@ export default function TypingArea({
 
   return (
     <div className="relative w-full">
-      {/* ─── Caps Lock Warning Popup Modal ─── */}
+      {/* ─── Caps Lock Warning Preferences Modal (only on explicit user request) ─── */}
       <CapsLockWarningModal
-        isOpen={capsLockOn && !isModalDismissed && (status === 'idle' || status === 'playing')}
-        onClose={() => setIsModalDismissed(true)}
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
         autoFixEnabled={autoFixCapsLock}
         onToggleAutoFix={setAutoFixCapsLock}
       />
 
-      {/* ─── Caps Lock Warning Banner & In-Page Badge ─── */}
+      {/* ─── Non-intrusive Caps Lock Warning Banner ─── */}
       {capsLockOn && (status === 'idle' || status === 'playing') && (
         <div className="mb-3 px-3.5 sm:px-4 py-2 sm:py-2.5 border border-neutral-300 dark:border-neutral-700 bg-neutral-100/90 dark:bg-neutral-850/90 rounded-xl text-neutral-800 dark:text-neutral-200 text-xs font-medium flex items-center justify-between gap-2 shadow-xs animate-fade-in">
           <div className="flex items-center gap-2 min-w-0">
@@ -432,7 +397,7 @@ export default function TypingArea({
           </div>
           <button
             type="button"
-            onClick={() => setIsModalDismissed(false)}
+            onClick={() => setIsModalOpen(true)}
             className="shrink-0 px-2.5 py-1 text-[11px] font-semibold rounded-lg bg-white dark:bg-neutral-800 hover:bg-neutral-50 dark:hover:bg-neutral-750 text-neutral-800 dark:text-neutral-200 transition-all cursor-pointer border border-neutral-300 dark:border-neutral-700 shadow-2xs"
           >
             Preferences
@@ -440,20 +405,11 @@ export default function TypingArea({
         </div>
       )}
 
-      {securityFlag && (
-        <div className="mb-3 px-4 py-2 border border-red-300 dark:border-red-900/50 bg-red-50 dark:bg-red-950/40 rounded-lg text-red-700 dark:text-red-400 text-xs font-medium flex items-center justify-between animate-fade-in">
-          <span>Security Notice: {securityFlag}</span>
-        </div>
-      )}
-
-      <motion.div
+      <div
         ref={containerRef}
-        animate={controls}
-        className={`typing-area-container relative p-5 sm:p-7 rounded-2xl border-2 ${
-          securityFlag
-            ? 'border-red-400/50 dark:border-red-500/30'
-            : 'border-neutral-200 dark:border-neutral-800'
-        } font-mono select-none transition-all duration-200 bg-white dark:bg-neutral-900/70 shadow-xs backdrop-blur-xs cursor-text`}
+        className={`typing-area-container relative p-5 sm:p-7 rounded-2xl border-2 border-neutral-200 dark:border-neutral-800 font-mono select-none transition-all duration-200 bg-white dark:bg-neutral-900/70 shadow-xs backdrop-blur-xs cursor-text ${
+          isShaking ? 'animate-shake' : ''
+        }`}
         style={{
           height: `${lineHeightPx * VISIBLE_LINES + (fontSize >= 28 ? 52 : 44)}px`,
           overflow: 'hidden',
@@ -512,6 +468,9 @@ export default function TypingArea({
           {lines.map((lineTokens, lineIdx) => {
             const distFromActive = lineIdx - activeLineIndex;
 
+            // Virtualize distant lines to minimize DOM tree size and garbage collection
+            const isOutOfWindow = distFromActive < -1 || distFromActive > VISIBLE_LINES + 1;
+
             return (
               <div
                 key={lineIdx}
@@ -531,48 +490,52 @@ export default function TypingArea({
                   filter: distFromActive < 0 ? 'blur(2px)' : 'none',
                 }}
               >
-                {lineTokens.map(({ text: wordText, startIndex }) => (
-                  <span key={startIndex} className="inline-flex whitespace-pre">
-                    {wordText.split('').map((char, i) => {
-                      const index = startIndex + i;
-                      const isTyped = index < typedText.length;
-                      const isCorrect = isTyped && typedText[index] === char;
-                      const isError = isTyped && !isCorrect;
-                      const isCurrent = index === typedText.length;
-                      const isSpace = char === ' ';
+                {isOutOfWindow ? (
+                  <div style={{ height: `${lineHeightPx}px` }} />
+                ) : (
+                  lineTokens.map(({ text: wordText, startIndex }) => (
+                    <span key={startIndex} className="inline-flex whitespace-pre">
+                      {wordText.split('').map((char, i) => {
+                        const index = startIndex + i;
+                        const isTyped = index < typedText.length;
+                        const isCorrect = isTyped && typedText[index] === char;
+                        const isError = isTyped && !isCorrect;
+                        const isCurrent = index === typedText.length;
+                        const isSpace = char === ' ';
 
-                      return (
-                        <span key={index} className="relative inline-block">
-                          {/* Smooth caret */}
-                          {isCurrent && (
+                        return (
+                          <span key={index} className="relative inline-block">
+                            {/* Smooth caret */}
+                            {isCurrent && (
+                              <span
+                                className="typing-caret absolute -right-[1.5px] top-[0.18em] bottom-[0.18em] w-[3px] rounded-full"
+                                style={{
+                                  background: 'var(--caret-color, currentColor)',
+                                }}
+                              />
+                            )}
+
                             <span
-                              className="typing-caret absolute -right-[1.5px] top-[0.18em] bottom-[0.18em] w-[3px] rounded-full"
-                              style={{
-                                background: 'var(--caret-color, currentColor)',
-                              }}
-                            />
-                          )}
-
-                          <span
-                            className={`transition-colors duration-75 ${
-                              isError
-                                ? isSpace
-                                  ? 'bg-red-500/25 border-b-2 border-red-500 text-transparent rounded-xs'
-                                  : 'text-red-500 dark:text-red-400 bg-red-500/15 rounded-xs font-semibold'
-                                : isCorrect
-                                ? 'text-neutral-900 dark:text-neutral-100 font-medium'
-                                : isCurrent
-                                ? 'text-neutral-950 dark:text-white font-bold'
-                                : 'text-neutral-400 dark:text-neutral-500'
-                            }`}
-                          >
-                            {char}
+                              className={`transition-colors duration-75 ${
+                                isError
+                                  ? isSpace
+                                    ? 'bg-red-500/25 border-b-2 border-red-500 text-transparent rounded-xs'
+                                    : 'text-red-500 dark:text-red-400 bg-red-500/15 rounded-xs font-semibold'
+                                  : isCorrect
+                                  ? 'text-neutral-900 dark:text-neutral-100 font-medium'
+                                  : isCurrent
+                                  ? 'text-neutral-950 dark:text-white font-bold'
+                                  : 'text-neutral-400 dark:text-neutral-500'
+                              }`}
+                            >
+                              {char}
+                            </span>
                           </span>
-                        </span>
-                      );
-                    })}
-                  </span>
-                ))}
+                        );
+                      })}
+                    </span>
+                  ))
+                )}
               </div>
             );
           })}
@@ -589,7 +552,10 @@ export default function TypingArea({
             transition: 'opacity 0.3s ease',
           }}
         />
-      </motion.div>
+      </div>
     </div>
   );
 }
+
+export default memo(TypingAreaComponent);
+
