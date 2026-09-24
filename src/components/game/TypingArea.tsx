@@ -54,13 +54,25 @@ function computeLines(
   const lines: { text: string; startIndex: number }[][] = [];
   let currentLine: { text: string; startIndex: number }[] = [];
   let lineWidth = 0;
+  const effectiveWidth = Math.max(containerWidth - 16, 120);
 
   for (let i = 0; i < tokens.length; i++) {
     const token = tokens[i];
+
+    // Force line break if token contains newline
+    if (token.text.includes('\n')) {
+      if (currentLine.length > 0) {
+        lines.push(currentLine);
+        currentLine = [];
+        lineWidth = 0;
+      }
+      continue;
+    }
+
     const tokenWidth = ctx.measureText(token.text).width;
 
     // If this token alone exceeds the line AND we already have content, wrap.
-    if (lineWidth + tokenWidth > containerWidth && currentLine.length > 0) {
+    if (lineWidth + tokenWidth > effectiveWidth && currentLine.length > 0) {
       lines.push(currentLine);
       currentLine = [];
       lineWidth = 0;
@@ -474,7 +486,7 @@ function TypingAreaComponent({
             return (
               <div
                 key={lineIdx}
-                className="typing-line flex flex-wrap items-baseline whitespace-pre"
+                className="typing-line flex flex-nowrap items-baseline whitespace-pre overflow-visible"
                 style={{
                   height: `${lineHeightPx}px`,
                   lineHeight: `${lineHeightPx}px`,
@@ -509,26 +521,6 @@ function TypingAreaComponent({
 
                           return (
                             <span key={index} className="relative inline-block">
-                              {/* Smooth caret placed BEFORE current untyped character */}
-                              {isCurrent && (
-                                <span
-                                  className="typing-caret absolute -left-[2px] top-[0.18em] bottom-[0.18em] w-[3px] rounded-full z-20 pointer-events-none"
-                                  style={{
-                                    background: 'var(--caret-color, currentColor)',
-                                  }}
-                                />
-                              )}
-
-                              {/* Caret after the last character when text is completed */}
-                              {index === targetText.length - 1 && typedText.length >= targetText.length && (
-                                <span
-                                  className="typing-caret absolute -right-[2px] top-[0.18em] bottom-[0.18em] w-[3px] rounded-full z-20 pointer-events-none"
-                                  style={{
-                                    background: 'var(--caret-color, currentColor)',
-                                  }}
-                                />
-                              )}
-
                               <span
                                 className={`transition-colors duration-75 ${
                                   isError

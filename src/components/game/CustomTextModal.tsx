@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { createPortal } from 'react-dom';
 import { PRESET_CUSTOM_TEXTS, type CustomPreset } from '../../data/words';
+import { sanitizeCustomText } from '../../utils/textUtils';
 
 interface CustomTextModalProps {
   isOpen: boolean;
@@ -30,8 +31,9 @@ export default function CustomTextModal({
   };
 
   const handleStart = () => {
-    if (!text.trim()) return;
-    onApply(text.trim(), timeLimit);
+    const clean = sanitizeCustomText(text);
+    if (!clean) return;
+    onApply(clean, timeLimit);
     onClose();
   };
 

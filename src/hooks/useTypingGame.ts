@@ -11,6 +11,7 @@ import type { Difficulty } from '../data/quotes';
 import { secureStorage, type TypingSessionRecord } from '../utils/secureStorage';
 
 import { playKeystrokeSound as playSound } from '../utils/soundEngine';
+import { sanitizeCustomText } from '../utils/textUtils';
 
 export type GameStatus = 'idle' | 'playing' | 'finished' | 'passed' | 'failed';
 export type GameMode = 'lesson' | 'timed' | 'custom' | 'quotes' | 'code';
@@ -51,7 +52,7 @@ export function useTypingGame(
     if (currentMode === 'lesson') {
       return levelConfig ? generateLevelText(levelConfig, 25) : '';
     } else if (currentMode === 'custom') {
-      return customText.trim() || 'Type something here...';
+      return sanitizeCustomText(customText) || 'Type something here...';
     } else if (currentMode === 'quotes') {
       return getRandomQuote(quoteCategory, quoteDifficulty).text;
     } else if (currentMode === 'code') {
@@ -295,7 +296,7 @@ export function useTypingGame(
         }
       } else if (mode === 'custom') {
         const textToUse = newCustomText !== undefined ? newCustomText : customText;
-        newTarget = textToUse.trim() || 'Type something here...';
+        newTarget = sanitizeCustomText(textToUse) || 'Type something here...';
       } else if (mode === 'quotes') {
         newTarget = getRandomQuote(quoteCategory, quoteDifficulty).text;
       } else if (mode === 'code') {
