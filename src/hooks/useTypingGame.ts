@@ -9,6 +9,7 @@ import { getRandomSnippet } from '../data/codeSnippets';
 import type { CodeLanguage } from '../data/codeSnippets';
 import type { Difficulty } from '../data/quotes';
 import { secureStorage, type TypingSessionRecord } from '../utils/secureStorage';
+import { saveTypingSession, saveLevelProgress } from '../services/cloudProgress';
 
 import { playKeystrokeSound as playSound } from '../utils/soundEngine';
 import { sanitizeCustomText } from '../utils/textUtils';
@@ -134,10 +135,9 @@ export function useTypingGame(
       setStatus(newStatus);
       statusRef.current = newStatus;
 
-      // Record session in storage for stats tracking
+      // Record session in storage and sync with Firestore for stats & progress tracking
       if (totalTypedCount > 0) {
         try {
-          const existing = secureStorage.getItem<TypingSessionRecord[]>('typlix_stats', []);
           const label =
             modeLabelRef.current ||
             (mode === 'lesson'
@@ -162,7 +162,18 @@ export function useTypingGame(
             mode,
             modeLabel: label,
           };
-          secureStorage.setItem('typlix_stats', [...existing, record].slice(-50));
+
+          // Save session locally and to cloud Firestore if signed in
+          saveTypingSession(record).catch(() => {});
+
+          // If lesson passed, automatically advance and save next unlocked level
+          if (mode === 'lesson' && newStatus === 'passed' && currentConfig) {
+            const nextUnlocked = Math.min(50, currentConfig.level + 1);
+            const currentSaved = secureStorage.getItem<number>('typingGameLevel', 1);
+            if (nextUnlocked > currentSaved) {
+              saveLevelProgress(nextUnlocked).catch(() => {});
+            }
+          }
         } catch {
           // ignore
         }

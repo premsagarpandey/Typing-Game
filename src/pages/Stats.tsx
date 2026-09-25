@@ -1,37 +1,12 @@
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { secureStorage, type TypingSessionRecord } from '../utils/secureStorage';
 import { exportStatsAsCSV, exportDataAsJSON } from '../utils/dataBackup';
 import WpmProgressChart from '../components/stats/WpmProgressChart';
+import { useUserProgress } from '../hooks/useUserProgress';
 
 export default function Stats() {
   const [feedback, setFeedback] = useState<string | null>(null);
-
-  const sessions = useMemo(() => {
-    return secureStorage.getItem<TypingSessionRecord[]>('typlix_stats', []);
-  }, []);
-
-  const currentLevel = useMemo(() => {
-    return secureStorage.getItem<number>('typingGameLevel', 1);
-  }, []);
-
-  const summary = useMemo(() => {
-    if (sessions.length === 0) {
-      return {
-        total: 0,
-        bestWpm: 0,
-        avgAccuracy: 0,
-      };
-    }
-
-    const total = sessions.length;
-    const bestWpm = Math.max(...sessions.map((s) => s.wpm));
-    const avgAccuracy = Math.round(
-      sessions.reduce((acc, s) => acc + s.accuracy, 0) / total
-    );
-
-    return { total, bestWpm, avgAccuracy };
-  }, [sessions]);
+  const { level: currentLevel, stats: sessions, summary } = useUserProgress();
 
   // Sort sessions in reverse chronological order
   const recentSessions = useMemo(() => {

@@ -13,6 +13,7 @@ import type { QuoteCategory, Difficulty } from '../data/quotes';
 import { CODE_SNIPPETS } from '../data/codeSnippets';
 import type { CodeLanguage } from '../data/codeSnippets';
 import GameSidebar from '../components/game/GameSidebar';
+import { saveLevelProgress } from '../services/cloudProgress';
 
 
 export default function Game() {
@@ -152,6 +153,7 @@ export default function Game() {
     (lvl: number) => {
       const next = Math.min(Math.max(1, lvl), 50);
       setCurrentLevel(next);
+      saveLevelProgress(next).catch(() => {});
       resetGame(getLevelConfig(next));
     },
     [setCurrentLevel, resetGame]

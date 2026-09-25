@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import {
   type User,
   GoogleAuthProvider,
@@ -10,9 +10,8 @@ import {
   signOut,
   onAuthStateChanged
 } from 'firebase/auth';
-import { doc, getDoc, setDoc } from 'firebase/firestore';
-import { auth, db } from '../lib/firebase';
-import { secureStorage } from '../utils/secureStorage';
+import { auth } from '../lib/firebase';
+import { syncUserProgressWithCloud } from '../services/cloudProgress';
 import { AuthContext } from './AuthContextCore';
 
 // Pre-instantiated Google Auth Provider for zero-latency instant popup
@@ -23,38 +22,29 @@ googleProvider.addScope('email');
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isSyncing, setIsSyncing] = useState(false);
+  const [lastSyncedAt, setLastSyncedAt] = useState<Date | null>(null);
 
-  // Helper to sync local progress with cloud progress (runs purely in background)
-  const syncProgress = async (currentUser: User) => {
+  // Helper to sync all user progress (typing speed, level record, stats) with Firestore
+  const triggerSync = useCallback(async (currentUser: User) => {
     try {
-      const timeoutPromise = new Promise((_, reject) =>
-        setTimeout(() => reject(new Error('Firestore timeout')), 1500)
-      );
-
-      const performSync = async () => {
-        const userRef = doc(db, 'users', currentUser.uid);
-        const userSnap = await getDoc(userRef);
-        const localLevel = secureStorage.getItem<number>('typingGameLevel', 1);
-
-        if (userSnap.exists()) {
-          const cloudData = userSnap.data();
-          const cloudLevel = cloudData.typingGameLevel || 1;
-
-          if (cloudLevel > localLevel) {
-            secureStorage.setItem('typingGameLevel', cloudLevel);
-          } else if (localLevel > cloudLevel) {
-            await setDoc(userRef, { typingGameLevel: localLevel }, { merge: true });
-          }
-        } else {
-          await setDoc(userRef, { typingGameLevel: localLevel }, { merge: true });
-        }
-      };
-
-      await Promise.race([performSync(), timeoutPromise]);
-    } catch {
-      // Non-critical background sync error, silently ignore
+      setIsSyncing(true);
+      const res = await syncUserProgressWithCloud(currentUser);
+      if (res.success) {
+        setLastSyncedAt(new Date());
+      }
+    } catch (err) {
+      console.warn('Background sync warning:', err);
+    } finally {
+      setIsSyncing(false);
     }
-  };
+  }, []);
+
+  const syncNow = useCallback(async () => {
+    if (user) {
+      await triggerSync(user);
+    }
+  }, [user, triggerSync]);
 
   useEffect(() => {
     // Check for redirect result if full-page redirect was used
@@ -62,7 +52,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       .then((result) => {
         if (result?.user) {
           setUser(result.user);
-          setTimeout(() => syncProgress(result.user).catch(() => {}), 1000);
+          setTimeout(() => triggerSync(result.user).catch(() => {}), 500);
         }
       })
       .catch((error) => {
@@ -75,13 +65,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setUser(currentUser);
       setLoading(false);
       if (currentUser) {
-        // Run sync only after main thread is free
-        setTimeout(() => syncProgress(currentUser).catch(() => {}), 800);
+        // Run full cloud sync so all levels, speed, and history are restored
+        setTimeout(() => triggerSync(currentUser).catch(() => {}), 300);
       }
     });
 
     return unsubscribe;
-  }, []);
+  }, [triggerSync]);
 
   const loginWithGoogleRedirect = async () => {
     await signInWithRedirect(auth, googleProvider);
@@ -91,16 +81,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const result = await signInWithPopup(auth, googleProvider);
     if (result?.user) {
       setUser(result.user);
-      setTimeout(() => syncProgress(result.user).catch(() => {}), 800);
+      setTimeout(() => triggerSync(result.user).catch(() => {}), 300);
     }
   };
 
   const loginWithEmail = async (email: string, pass: string) => {
-    await signInWithEmailAndPassword(auth, email, pass);
+    const cred = await signInWithEmailAndPassword(auth, email, pass);
+    if (cred.user) {
+      setTimeout(() => triggerSync(cred.user).catch(() => {}), 300);
+    }
   };
 
   const signupWithEmail = async (email: string, pass: string) => {
-    await createUserWithEmailAndPassword(auth, email, pass);
+    const cred = await createUserWithEmailAndPassword(auth, email, pass);
+    if (cred.user) {
+      setTimeout(() => triggerSync(cred.user).catch(() => {}), 300);
+    }
   };
 
   const logout = async () => {
@@ -108,7 +104,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, loginWithGoogle, loginWithGoogleRedirect, loginWithEmail, signupWithEmail, logout }}>
+    <AuthContext.Provider
+      value={{
+        user,
+        loading,
+        loginWithGoogle,
+        loginWithGoogleRedirect,
+        loginWithEmail,
+        signupWithEmail,
+        logout,
+        isSyncing,
+        lastSyncedAt,
+        syncNow,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );

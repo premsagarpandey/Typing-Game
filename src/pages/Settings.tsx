@@ -1,12 +1,13 @@
 import { useState, useCallback, useRef } from 'react';
 import { useLocalStorage } from '../hooks/useLocalStorage';
-import { secureStorage } from '../utils/secureStorage';
 import ThemeToggle from '../components/common/ThemeToggle';
 import { useTheme } from '../hooks/useTheme';
 import { SOUND_PROFILES, previewProfileSound, updateSoundSettings } from '../utils/soundEngine';
 import type { SoundProfileId } from '../utils/soundEngine';
 import { KEYBOARD_LAYOUTS, type KeyboardLayoutId } from '../data/keyboardLayouts';
 import { exportDataAsJSON, exportStatsAsCSV, importDataFromJSON } from '../utils/dataBackup';
+
+import { resetLevelProgress, clearStatsHistory } from '../services/cloudProgress';
 
 export default function Settings() {
   const [soundEnabled, setSoundEnabled] = useLocalStorage('sound', true);
@@ -27,16 +28,16 @@ export default function Settings() {
     setTimeout(() => setNotice(null), 4000);
   };
 
-  const handleResetProgress = () => {
-    secureStorage.setItem('typingGameLevel', 1);
+  const handleResetProgress = async () => {
+    await resetLevelProgress();
     setConfirmReset(false);
-    showNotice('Level progress reset to Level 1.', 'info');
+    showNotice('Level progress reset to Level 1 and synced.', 'info');
   };
 
-  const handleClearHistory = () => {
-    secureStorage.setItem('typlix_stats', []);
+  const handleClearHistory = async () => {
+    await clearStatsHistory();
     setConfirmClear(false);
-    showNotice('Session history cleared.', 'info');
+    showNotice('Session history cleared and synced.', 'info');
   };
 
   const handlePreview = useCallback((profileId: SoundProfileId) => {

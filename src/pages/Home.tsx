@@ -3,12 +3,12 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Keyboard, Timer, BarChart2 } from 'lucide-react';
 import FingerPlacementModal from '../components/common/FingerPlacementModal';
 import FingerPlacementTutorial from '../components/common/FingerPlacementTutorial';
-import { secureStorage } from '../utils/secureStorage';
+import { useUserProgress } from '../hooks/useUserProgress';
 
 export default function Home() {
   const navigate = useNavigate();
   const [showPlacementModal, setShowPlacementModal] = useState(false);
-  const currentLevel = secureStorage.getItem<number>('typingGameLevel', 1);
+  const { level: currentLevel } = useUserProgress();
 
   const handleStartLesson = () => {
     try {

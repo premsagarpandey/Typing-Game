@@ -9,6 +9,9 @@ export interface AuthContextType {
   loginWithEmail: (e: string, p: string) => Promise<void>;
   signupWithEmail: (e: string, p: string) => Promise<void>;
   logout: () => Promise<void>;
+  isSyncing: boolean;
+  lastSyncedAt: Date | null;
+  syncNow: () => Promise<void>;
 }
 
 export const AuthContext = createContext<AuthContextType>({} as AuthContextType);
