@@ -1,12 +1,14 @@
 {
-  "name": "typing-game-project",
+  "name": "typlix",
   "private": true,
-  "version": "0.0.0",
+  "version": "1.0.0",
+  "description": "Minimalist, high-performance touch typing platform built with React 19, TypeScript, and Vite.",
   "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "oxlint",
+    "type-check": "tsc --noEmit",
     "preview": "vite preview"
   },
   "dependencies": {

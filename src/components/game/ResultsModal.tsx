@@ -94,37 +94,65 @@ export default function ResultsModal({
         </div>
       </div>
 
+      {/* Level Requirement Notice */}
+      {isLesson && levelConfig && (
+        <div className="mb-4">
+          {isPassed ? (
+            <div className="p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-emerald-700 dark:text-emerald-300 text-xs text-center font-medium">
+              🎉 <span className="font-semibold">Level {levelConfig.level} Cleared!</span>{' '}
+              {levelConfig.level < 50
+                ? `Level ${levelConfig.level + 1} ab unlock ho chuka hai.`
+                : 'Congratulations! Aapne saare 50 levels pass kar liye!'}
+            </div>
+          ) : (
+            <div className="p-3 rounded-lg bg-amber-500/10 border border-amber-500/30 text-amber-700 dark:text-amber-300 text-xs text-center font-medium">
+              🔒 <span className="font-semibold">Level Not Cleared.</span> Agla level unlock karne ke liye{' '}
+              <span className="font-bold">{levelConfig.targetWpm} WPM</span> aur{' '}
+              <span className="font-bold">{levelConfig.targetAccuracy}% Accuracy</span> chahiye.
+            </div>
+          )}
+        </div>
+      )}
+
       <div className="flex gap-2">
         <button
           onClick={onRetry}
-          className="flex-1 py-2.5 px-4 border border-neutral-300 dark:border-neutral-700 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors text-neutral-700 dark:text-neutral-300 font-medium rounded-md text-sm cursor-pointer flex items-center justify-center gap-2"
+          className={`${
+            isLesson && !isPassed ? 'w-full' : 'flex-1'
+          } py-2.5 px-4 ${
+            isLesson && !isPassed
+              ? 'bg-neutral-900 dark:bg-neutral-100 text-white dark:text-neutral-900 hover:opacity-90'
+              : 'border border-neutral-300 dark:border-neutral-700 hover:bg-neutral-100 dark:hover:bg-neutral-800 text-neutral-700 dark:text-neutral-300'
+          } font-medium rounded-md text-sm cursor-pointer flex items-center justify-center gap-2 transition-all shadow-xs`}
         >
-          Retry
+          {isLesson && !isPassed ? 'Try Again' : 'Retry'}
           <kbd className="px-1.5 py-0.5 text-[10px] font-mono bg-neutral-200 dark:bg-neutral-800 text-neutral-500 rounded">
             R
           </kbd>
         </button>
 
-        {isLesson && onNextLevel ? (
+        {isLesson && isPassed && onNextLevel && (
           <button
             onClick={onNextLevel}
-            className="flex-1 py-2.5 px-4 bg-neutral-900 dark:bg-neutral-100 text-white dark:text-neutral-900 font-medium rounded-md text-sm cursor-pointer flex items-center justify-center gap-2 hover:opacity-90 transition-opacity"
+            className="flex-1 py-2.5 px-4 bg-emerald-600 hover:bg-emerald-700 text-white font-medium rounded-md text-sm cursor-pointer flex items-center justify-center gap-2 transition-colors shadow-xs"
           >
-            {levelConfig && levelConfig.level >= 50
-              ? isPassed ? 'Done' : 'Replay'
-              : isPassed ? 'Next' : 'Skip'}
-            <kbd className="px-1.5 py-0.5 text-[10px] font-mono bg-white/20 dark:bg-neutral-900/20 rounded">
+            {levelConfig && levelConfig.level >= 50 ? 'All Done 🎉' : 'Next Level ➔'}
+            <kbd className="px-1.5 py-0.5 text-[10px] font-mono bg-white/20 rounded">
               ↵
             </kbd>
           </button>
-        ) : mode === 'custom' && onOpenCustomModal ? (
+        )}
+
+        {!isLesson && mode === 'custom' && onOpenCustomModal && (
           <button
             onClick={onOpenCustomModal}
             className="flex-1 py-2.5 px-4 bg-neutral-900 dark:bg-neutral-100 text-white dark:text-neutral-900 font-medium rounded-md text-sm cursor-pointer hover:opacity-90 transition-opacity"
           >
             Edit Text
           </button>
-        ) : (
+        )}
+
+        {!isLesson && mode !== 'custom' && (
           <button
             onClick={onRetry}
             className="flex-1 py-2.5 px-4 bg-neutral-900 dark:bg-neutral-100 text-white dark:text-neutral-900 font-medium rounded-md text-sm cursor-pointer flex items-center justify-center gap-2 hover:opacity-90 transition-opacity"
@@ -138,8 +166,11 @@ export default function ResultsModal({
       </div>
 
       <div className="mt-3 pt-3 border-t border-neutral-200 dark:border-neutral-800 text-[11px] text-neutral-400 dark:text-neutral-600">
-        Press <kbd className="px-1 py-0.5 font-mono bg-neutral-200 dark:bg-neutral-800 rounded text-[10px]">Enter</kbd> or{' '}
-        <kbd className="px-1 py-0.5 font-mono bg-neutral-200 dark:bg-neutral-800 rounded text-[10px]">R</kbd> to continue
+        {isLesson && !isPassed ? (
+          <span>Press <kbd className="px-1 py-0.5 font-mono bg-neutral-200 dark:bg-neutral-800 rounded text-[10px]">Enter</kbd> or <kbd className="px-1 py-0.5 font-mono bg-neutral-200 dark:bg-neutral-800 rounded text-[10px]">R</kbd> to retry</span>
+        ) : (
+          <span>Press <kbd className="px-1 py-0.5 font-mono bg-neutral-200 dark:bg-neutral-800 rounded text-[10px]">Enter</kbd> or <kbd className="px-1 py-0.5 font-mono bg-neutral-200 dark:bg-neutral-800 rounded text-[10px]">R</kbd> to continue</span>
+        )}
       </div>
     </div>
   );

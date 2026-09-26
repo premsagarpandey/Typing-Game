@@ -13,13 +13,14 @@ import type { QuoteCategory, Difficulty } from '../data/quotes';
 import { CODE_SNIPPETS } from '../data/codeSnippets';
 import type { CodeLanguage } from '../data/codeSnippets';
 import GameSidebar from '../components/game/GameSidebar';
-import { saveLevelProgress } from '../services/cloudProgress';
+import { secureStorage } from '../utils/secureStorage';
 
 
 export default function Game() {
   const [searchParams] = useSearchParams();
   const [mode, setMode] = useLocalStorage<GameMode>('typlix_game_mode', 'lesson');
-  const [currentLevel, setCurrentLevel] = useLocalStorage<number>('typingGameLevel', 1);
+  const [maxUnlockedLevel] = useLocalStorage<number>('typingGameLevel', 1);
+  const [currentLevel, setCurrentLevel] = useLocalStorage<number>('typlix_active_level', 1);
   const [timedDuration, setTimedDuration] = useLocalStorage<number>('typlix_timed_duration', 30);
   const [customText, setCustomText] = useLocalStorage<string>(
     'typlix_custom_text',
@@ -51,7 +52,16 @@ export default function Game() {
     null
   );
 
-  const levelConfig = useMemo(() => getLevelConfig(currentLevel), [currentLevel]);
+  // Strictly clamp active level so user cannot exceed the highest unlocked level
+  const effectiveLevel = Math.min(Math.max(1, currentLevel), Math.max(1, maxUnlockedLevel));
+
+  useEffect(() => {
+    if (currentLevel > maxUnlockedLevel) {
+      setCurrentLevel(maxUnlockedLevel);
+    }
+  }, [currentLevel, maxUnlockedLevel, setCurrentLevel]);
+
+  const levelConfig = useMemo(() => getLevelConfig(effectiveLevel), [effectiveLevel]);
 
   // Sidebar & Virtual Keyboard visibility states (persisted)
   const [isSidebarOpen, setIsSidebarOpen] = useLocalStorage<boolean>('typlix_sidebar_visible', true);
@@ -66,12 +76,12 @@ export default function Game() {
   }, [mode, levelConfig.timeLimit, timedDuration, customTimeLimit]);
 
   const modeLabel = useMemo(() => {
-    if (mode === 'lesson') return `Level ${currentLevel}`;
+    if (mode === 'lesson') return `Level ${effectiveLevel}`;
     if (mode === 'timed') return `Timed (${timedDuration}s)`;
     if (mode === 'quotes') return `Quote${quoteCategory ? ` · ${quoteCategory}` : ''}`;
     if (mode === 'code') return `Code${codeLanguage ? ` · ${codeLanguage}` : ''}`;
     return 'Custom Text';
-  }, [mode, currentLevel, timedDuration, quoteCategory, codeLanguage]);
+  }, [mode, effectiveLevel, timedDuration, quoteCategory, codeLanguage]);
 
   const {
     status,
@@ -148,28 +158,33 @@ export default function Game() {
     [setTimedDuration, resetGame]
   );
 
-  // Select lesson level
+  // Select lesson level (strictly capped to unlocked progress)
   const handleSelectLevel = useCallback(
     (lvl: number) => {
-      const next = Math.min(Math.max(1, lvl), 50);
-      setCurrentLevel(next);
-      saveLevelProgress(next).catch(() => {});
-      resetGame(getLevelConfig(next));
+      const latestUnlocked = secureStorage.getItem<number>('typingGameLevel', maxUnlockedLevel);
+      const target = Math.min(Math.max(1, lvl), latestUnlocked);
+      setCurrentLevel(target);
+      resetGame(getLevelConfig(target));
     },
-    [setCurrentLevel, resetGame]
+    [maxUnlockedLevel, setCurrentLevel, resetGame]
   );
 
   const handleNextLevel = useCallback(() => {
     if (mode === 'lesson') {
-      handleSelectLevel(currentLevel + 1);
+      const latestUnlocked = secureStorage.getItem<number>('typingGameLevel', maxUnlockedLevel);
+      if (effectiveLevel < latestUnlocked) {
+        handleSelectLevel(effectiveLevel + 1);
+      }
     } else {
       resetGame();
     }
-  }, [mode, currentLevel, handleSelectLevel, resetGame]);
+  }, [mode, effectiveLevel, maxUnlockedLevel, handleSelectLevel, resetGame]);
 
   const handlePrevLevel = useCallback(() => {
-    handleSelectLevel(currentLevel - 1);
-  }, [currentLevel, handleSelectLevel]);
+    if (effectiveLevel > 1) {
+      handleSelectLevel(effectiveLevel - 1);
+    }
+  }, [effectiveLevel, handleSelectLevel]);
 
   const handleRetry = useCallback(() => {
     resetGame();
@@ -222,7 +237,6 @@ export default function Game() {
     setIsCustomModalOpen(true);
   }, []);
 
-
   // Keyboard shortcut handlers for Enter and R when finished
   useEffect(() => {
     if (status !== 'passed' && status !== 'failed' && status !== 'finished') {
@@ -233,7 +247,15 @@ export default function Game() {
       if (e.key === 'Enter') {
         e.preventDefault();
         e.stopPropagation();
-        handleNextLevel();
+        if (mode === 'lesson') {
+          if (status === 'passed') {
+            handleNextLevel();
+          } else {
+            handleRetry();
+          }
+        } else {
+          handleNextLevel();
+        }
       } else if (e.key === 'r' || e.key === 'R') {
         e.preventDefault();
         e.stopPropagation();
@@ -245,14 +267,17 @@ export default function Game() {
     return () => {
       window.removeEventListener('keydown', handleGlobalKeyDown, true);
     };
-  }, [status, handleNextLevel, handleRetry]);  return (
+  }, [status, mode, handleNextLevel, handleRetry]);
+
+  return (
     <div className="w-full h-full max-h-[calc(100vh-62px)] flex flex-col md:flex-row gap-3 sm:gap-4 items-stretch overflow-hidden">
       {/* ═══════════════════ LEFT SIDEBAR: Mode & Lesson Controls ═══════════════════ */}
       {isSidebarOpen && (
         <GameSidebar
           mode={mode}
           setIsSidebarOpen={setIsSidebarOpen}
-          currentLevel={currentLevel}
+          currentLevel={effectiveLevel}
+          maxUnlockedLevel={maxUnlockedLevel}
           levelConfig={levelConfig}
           handleSelectLevel={handleSelectLevel}
           handlePrevLevel={handlePrevLevel}
@@ -300,15 +325,15 @@ export default function Game() {
               accuracy={accuracy}
               combo={combo}
               mode={mode}
-              level={currentLevel}
+              level={effectiveLevel}
               levelTitle={mode === 'lesson' ? levelConfig.title : undefined}
               targetWpm={mode === 'lesson' ? levelConfig.targetWpm : undefined}
               targetAccuracy={mode === 'lesson' ? levelConfig.targetAccuracy : undefined}
               initialTime={activeInitialTime}
               onPrevLevel={mode === 'lesson' ? handlePrevLevel : undefined}
               onNextLevel={mode === 'lesson' ? handleNextLevel : undefined}
-              hasPrevLevel={currentLevel > 1}
-              hasNextLevel={currentLevel < 50}
+              hasPrevLevel={effectiveLevel > 1}
+              hasNextLevel={effectiveLevel < maxUnlockedLevel}
               selectedDuration={timedDuration}
               onSelectDuration={handleSelectTimedDuration}
               onOpenCustomModal={handleOpenCustomModal}

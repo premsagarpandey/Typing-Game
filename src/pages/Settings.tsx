@@ -1,4 +1,5 @@
 import { useState, useCallback, useRef } from 'react';
+import { Link } from 'react-router-dom';
 import { useLocalStorage } from '../hooks/useLocalStorage';
 import ThemeToggle from '../components/common/ThemeToggle';
 import { useTheme } from '../hooks/useTheme';
@@ -6,8 +7,8 @@ import { SOUND_PROFILES, previewProfileSound, updateSoundSettings } from '../uti
 import type { SoundProfileId } from '../utils/soundEngine';
 import { KEYBOARD_LAYOUTS, type KeyboardLayoutId } from '../data/keyboardLayouts';
 import { exportDataAsJSON, exportStatsAsCSV, importDataFromJSON } from '../utils/dataBackup';
-
 import { resetLevelProgress, clearStatsHistory } from '../services/cloudProgress';
+import { openCookieConsentModal, resetCookieConsent } from '../utils/cookieConsent';
 
 export default function Settings() {
   const [soundEnabled, setSoundEnabled] = useLocalStorage('sound', true);
@@ -18,6 +19,7 @@ export default function Settings() {
 
   const [confirmReset, setConfirmReset] = useState(false);
   const [confirmClear, setConfirmClear] = useState(false);
+  const [confirmPurgeAll, setConfirmPurgeAll] = useState(false);
   const [notice, setNotice] = useState<{ text: string; type: 'info' | 'success' | 'error' } | null>(null);
   const [previewingId, setPreviewingId] = useState<string | null>(null);
 
@@ -38,6 +40,18 @@ export default function Settings() {
     await clearStatsHistory();
     setConfirmClear(false);
     showNotice('Session history cleared and synced.', 'info');
+  };
+
+  const handlePurgeAllData = () => {
+    try {
+      localStorage.clear();
+      resetCookieConsent();
+      setConfirmPurgeAll(false);
+      showNotice('All local storage data and consent choices have been purged.', 'info');
+      setTimeout(() => window.location.reload(), 1200);
+    } catch {
+      showNotice('Failed to purge storage.', 'error');
+    }
   };
 
   const handlePreview = useCallback((profileId: SoundProfileId) => {
@@ -418,6 +432,95 @@ export default function Settings() {
               </button>
               <button
                 onClick={() => setConfirmClear(false)}
+                className="px-2 py-1 border border-neutral-300 dark:border-neutral-700 text-neutral-600 dark:text-neutral-400 text-xs rounded-md cursor-pointer"
+              >
+                Cancel
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Privacy & Data Transparency Section */}
+      <div className="p-5 border border-neutral-200 dark:border-neutral-800 rounded-lg space-y-4">
+        <div className="flex items-center justify-between">
+          <div>
+            <h3 className="font-medium text-neutral-900 dark:text-neutral-100 text-sm">
+              Privacy & Data Transparency
+            </h3>
+            <p className="text-xs text-neutral-500 mt-0.5">
+              Strictly collecting only necessary data for touch typing lessons
+            </p>
+          </div>
+          <span className="text-[10px] font-semibold uppercase px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+            Data Minimization
+          </span>
+        </div>
+
+        <p className="text-xs text-neutral-600 dark:text-neutral-400 leading-relaxed">
+          Typlix operates under the <strong>Data Minimization Principle</strong>. We never sell your personal records, profile your web browsing, or run third-party marketing trackers. Your keystroke logs and sound preferences are stored securely on your own device.
+        </p>
+
+        <div className="flex flex-wrap items-center gap-2 pt-1">
+          <button
+            onClick={openCookieConsentModal}
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-md bg-neutral-900 dark:bg-white text-white dark:text-neutral-900 hover:bg-neutral-800 dark:hover:bg-neutral-100 transition-colors cursor-pointer shadow-xs"
+          >
+            <span>🍪</span> Manage Cookie Consent
+          </button>
+          <Link
+            to="/privacy"
+            className="px-3 py-1.5 text-xs font-medium rounded-md border border-neutral-300 dark:border-neutral-700 hover:bg-neutral-100 dark:hover:bg-neutral-800 text-neutral-700 dark:text-neutral-300 transition-colors"
+          >
+            Privacy Policy
+          </Link>
+          <Link
+            to="/cookies"
+            className="px-3 py-1.5 text-xs font-medium rounded-md border border-neutral-300 dark:border-neutral-700 hover:bg-neutral-100 dark:hover:bg-neutral-800 text-neutral-700 dark:text-neutral-300 transition-colors"
+          >
+            Cookie Policy
+          </Link>
+          <Link
+            to="/terms"
+            className="px-3 py-1.5 text-xs font-medium rounded-md border border-neutral-300 dark:border-neutral-700 hover:bg-neutral-100 dark:hover:bg-neutral-800 text-neutral-700 dark:text-neutral-300 transition-colors"
+          >
+            Terms & Conditions
+          </Link>
+          <Link
+            to="/refund"
+            className="px-3 py-1.5 text-xs font-medium rounded-md border border-neutral-300 dark:border-neutral-700 hover:bg-neutral-100 dark:hover:bg-neutral-800 text-neutral-700 dark:text-neutral-300 transition-colors"
+          >
+            Refund Policy
+          </Link>
+        </div>
+
+        {/* Right to be Forgotten (Purge Everything) */}
+        <div className="pt-3 border-t border-neutral-200 dark:border-neutral-800 flex items-center justify-between">
+          <div>
+            <h4 className="text-xs font-medium text-neutral-900 dark:text-neutral-100">
+              Wipe All Local Storage Data
+            </h4>
+            <p className="text-[11px] text-neutral-500">
+              Permanently delete all stored scores, preferences, and cookie consent on this device.
+            </p>
+          </div>
+          {!confirmPurgeAll ? (
+            <button
+              onClick={() => setConfirmPurgeAll(true)}
+              className="px-2.5 py-1 text-xs font-medium text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/30 rounded-md border border-rose-200 dark:border-rose-900/40 transition-colors cursor-pointer"
+            >
+              Wipe All
+            </button>
+          ) : (
+            <div className="flex items-center gap-1.5">
+              <button
+                onClick={handlePurgeAllData}
+                className="px-2.5 py-1 bg-rose-600 hover:bg-rose-700 text-white text-xs font-medium rounded-md cursor-pointer transition-colors"
+              >
+                Confirm Wipe
+              </button>
+              <button
+                onClick={() => setConfirmPurgeAll(false)}
                 className="px-2 py-1 border border-neutral-300 dark:border-neutral-700 text-neutral-600 dark:text-neutral-400 text-xs rounded-md cursor-pointer"
               >
                 Cancel

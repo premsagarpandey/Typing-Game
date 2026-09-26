@@ -17,12 +17,16 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
   const [isLoginMode, setIsLoginMode] = useState(true);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [agreeTerms, setAgreeTerms] = useState(false);
+  const [agreeDataConsent, setAgreeDataConsent] = useState(false);
   const [emailLoading, setEmailLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
 
   const handleClose = useCallback(() => {
     setEmail('');
     setPassword('');
+    setAgreeTerms(false);
+    setAgreeDataConsent(false);
     setEmailLoading(false);
     setGoogleLoading(false);
     onClose();
@@ -49,6 +53,17 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (emailLoading || googleLoading) return;
+
+    if (!isLoginMode) {
+      if (!agreeTerms) {
+        toast.error('Please accept the Terms & Conditions and Privacy Policy to continue.', 'Consent Required');
+        return;
+      }
+      if (!agreeDataConsent) {
+        toast.error('Please consent to necessary data processing to create your account.', 'Consent Required');
+        return;
+      }
+    }
 
     const emailLower = email.toLowerCase().trim();
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -225,9 +240,77 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
                   </div>
                 </div>
 
+                {!isLoginMode ? (
+                  <div className="space-y-2.5 pt-1 text-left">
+                    <label className="flex items-start gap-2.5 cursor-pointer text-xs text-neutral-600 dark:text-neutral-400 select-none">
+                      <input
+                        type="checkbox"
+                        checked={agreeTerms}
+                        onChange={(e) => setAgreeTerms(e.target.checked)}
+                        className="mt-0.5 rounded border-neutral-300 dark:border-neutral-700 text-neutral-900 focus:ring-neutral-900 dark:focus:ring-white cursor-pointer"
+                        required
+                      />
+                      <span>
+                        I agree to the{' '}
+                        <a
+                          href="/terms"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="font-semibold text-neutral-900 dark:text-white underline underline-offset-2 hover:opacity-80"
+                        >
+                          Terms & Conditions
+                        </a>{' '}
+                        and acknowledge the{' '}
+                        <a
+                          href="/privacy"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="font-semibold text-neutral-900 dark:text-white underline underline-offset-2 hover:opacity-80"
+                        >
+                          Privacy Policy
+                        </a>.
+                      </span>
+                    </label>
+
+                    <label className="flex items-start gap-2.5 cursor-pointer text-xs text-neutral-600 dark:text-neutral-400 select-none">
+                      <input
+                        type="checkbox"
+                        checked={agreeDataConsent}
+                        onChange={(e) => setAgreeDataConsent(e.target.checked)}
+                        className="mt-0.5 rounded border-neutral-300 dark:border-neutral-700 text-neutral-900 focus:ring-neutral-900 dark:focus:ring-white cursor-pointer"
+                        required
+                      />
+                      <span>
+                        <strong className="text-neutral-900 dark:text-neutral-100 font-semibold">Only Necessary Data:</strong> I consent to processing only necessary account information (email & typing metrics) to synchronize my progress.
+                      </span>
+                    </label>
+                  </div>
+                ) : (
+                  <p className="text-[11px] text-neutral-500 dark:text-neutral-400 text-center leading-normal pt-0.5">
+                    By signing in, you agree to our{' '}
+                    <a
+                      href="/terms"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="underline text-neutral-700 dark:text-neutral-300 hover:text-neutral-900 dark:hover:text-white"
+                    >
+                      Terms
+                    </a>{' '}
+                    and{' '}
+                    <a
+                      href="/privacy"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="underline text-neutral-700 dark:text-neutral-300 hover:text-neutral-900 dark:hover:text-white"
+                    >
+                      Privacy Policy
+                    </a>. Typlix collects only necessary data.
+                  </p>
+                )}
+
                 <button
                   type="submit"
-                  disabled={emailLoading || googleLoading}
+                  disabled={emailLoading || googleLoading || (!isLoginMode && (!agreeTerms || !agreeDataConsent))}
                   className="w-full flex items-center justify-center gap-2 py-2.5 px-4 border border-transparent rounded-xl shadow-sm text-sm font-semibold text-white bg-neutral-900 hover:bg-neutral-800 dark:bg-white dark:text-neutral-900 dark:hover:bg-neutral-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-neutral-900 transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
                 >
                   {emailLoading ? (
@@ -303,6 +386,8 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
                 <button
                   onClick={() => {
                     setIsLoginMode(!isLoginMode);
+                    setAgreeTerms(false);
+                    setAgreeDataConsent(false);
                   }}
                   className="font-semibold text-neutral-900 dark:text-white hover:underline transition-all cursor-pointer"
                 >

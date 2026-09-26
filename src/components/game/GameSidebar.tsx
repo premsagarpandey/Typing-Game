@@ -25,6 +25,7 @@ interface GameSidebarProps {
   mode: GameMode;
   setIsSidebarOpen: (open: boolean) => void;
   currentLevel: number;
+  maxUnlockedLevel?: number;
   levelConfig: ReturnType<typeof getLevelConfig>;
   handleSelectLevel: (lvl: number) => void;
   handlePrevLevel: () => void;
@@ -52,6 +53,7 @@ function GameSidebarComponent({
   mode,
   setIsSidebarOpen,
   currentLevel,
+  maxUnlockedLevel = 1,
   levelConfig,
   handleSelectLevel,
   handlePrevLevel,
@@ -142,22 +144,35 @@ function GameSidebarComponent({
 
               {/* Navigation & Action Controls */}
               <div className="space-y-2 pt-2.5 border-t border-neutral-200 dark:border-neutral-800">
-                {/* Level Dropdown */}
+                {/* Level Dropdown with Locked Levels */}
                 <div className="space-y-1">
-                  <label className="text-[10px] font-semibold text-neutral-400 dark:text-neutral-500 uppercase tracking-wider block">
-                    Select Level
-                  </label>
+                  <div className="flex items-center justify-between">
+                    <label className="text-[10px] font-semibold text-neutral-400 dark:text-neutral-500 uppercase tracking-wider block">
+                      Select Level
+                    </label>
+                    <span className="text-[10px] font-mono text-neutral-500 dark:text-neutral-400">
+                      Unlocked: {maxUnlockedLevel}/50
+                    </span>
+                  </div>
                   <select
                     aria-label="Select Level"
                     value={currentLevel}
                     onChange={(e) => handleSelectLevel(Number(e.target.value))}
                     className="w-full px-2.5 py-1.5 text-xs font-medium rounded-lg border border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-800/90 text-neutral-800 dark:text-neutral-200 cursor-pointer focus:outline-none focus:ring-1 focus:ring-blue-500"
                   >
-                    {LEVEL_OPTIONS.map((item) => (
-                      <option key={item.level} value={item.level} className="bg-white dark:bg-neutral-900">
-                        {item.level}. {item.title}
-                      </option>
-                    ))}
+                    {LEVEL_OPTIONS.map((item) => {
+                      const isLocked = item.level > maxUnlockedLevel;
+                      return (
+                        <option
+                          key={item.level}
+                          value={item.level}
+                          disabled={isLocked}
+                          className={isLocked ? 'text-neutral-400 dark:text-neutral-600 bg-neutral-100 dark:bg-neutral-900' : 'bg-white dark:bg-neutral-900'}
+                        >
+                          {isLocked ? `🔒 Level ${item.level} (Locked)` : `${item.level}. ${item.title}`}
+                        </option>
+                      );
+                    })}
                   </select>
                 </div>
 
@@ -167,17 +182,26 @@ function GameSidebarComponent({
                     onClick={handlePrevLevel}
                     disabled={currentLevel <= 1}
                     className="w-full py-1.5 px-3 text-xs font-medium rounded-lg border border-neutral-200 dark:border-neutral-700 hover:bg-neutral-100 dark:hover:bg-neutral-800 disabled:opacity-30 disabled:pointer-events-none cursor-pointer transition-colors text-neutral-700 dark:text-neutral-300 text-center"
+                    title={currentLevel > 1 ? 'Go to previous level' : 'First level'}
                   >
                     ◀ Prev
                   </button>
                   <button
                     onClick={handleNextLevel}
-                    disabled={currentLevel >= 50}
+                    disabled={currentLevel >= maxUnlockedLevel}
                     className="w-full py-1.5 px-3 text-xs font-medium rounded-lg border border-neutral-200 dark:border-neutral-700 hover:bg-neutral-100 dark:hover:bg-neutral-800 disabled:opacity-30 disabled:pointer-events-none cursor-pointer transition-colors text-neutral-700 dark:text-neutral-300 text-center"
+                    title={currentLevel >= maxUnlockedLevel ? 'Clear this level first to unlock the next level' : 'Go to next level'}
                   >
                     Next ▶
                   </button>
                 </div>
+
+                {/* Lock notice when on the highest unlocked level */}
+                {currentLevel >= maxUnlockedLevel && currentLevel < 50 && (
+                  <div className="text-[11px] text-amber-700 dark:text-amber-400 bg-amber-500/10 border border-amber-500/20 px-2 py-1 rounded-md text-center font-medium">
+                    🔒 Clear Level {currentLevel} to unlock Level {currentLevel + 1}
+                  </div>
+                )}
 
                 {/* Restart & Switch Modes */}
                 <div className="flex gap-2">

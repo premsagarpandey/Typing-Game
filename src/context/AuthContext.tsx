@@ -11,7 +11,7 @@ import {
   onAuthStateChanged
 } from 'firebase/auth';
 import { auth } from '../lib/firebase';
-import { syncUserProgressWithCloud } from '../services/cloudProgress';
+import { syncUserProgressWithCloud, clearLocalProgressOnLogout } from '../services/cloudProgress';
 import { AuthContext } from './AuthContextCore';
 
 // Pre-instantiated Google Auth Provider for zero-latency instant popup
@@ -101,6 +101,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const logout = async () => {
     await signOut(auth);
+    clearLocalProgressOnLogout();
   };
 
   return (

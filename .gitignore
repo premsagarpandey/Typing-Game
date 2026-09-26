@@ -1,5 +1,41 @@
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# Production build outputs
+dist/
+dist-ssr/
+build/
+*.local
+
+# Environment variables & secrets (CRITICAL: Do NOT commit secrets)
+.env
+.env.*
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+!.env.example
+
+# Service accounts & private credentials
+*.pem
+*.key
+*.cert
+*.pfx
+*serviceAccountKey*.json
+*firebase-adminsdk*.json
+credentials.json
+secrets.json
+
+# Firebase CLI cache & emulator logs
+.firebase/
+firebase-debug.log*
+firestore-debug.log*
+ui-debug.log*
+
 # Logs
-logs
+logs/
 *.log
 npm-debug.log*
 yarn-debug.log*
@@ -7,22 +43,33 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
-node_modules
-dist
-dist-ssr
-*.local
+# Vite, Rolldown & bundler caches
+.vite/
+.rollup.cache/
+.cache/
 
-# Editor directories and files
+# Testing & coverage
+coverage/
+.nyc_output/
+
+# IDE & OS metadata
 .vscode/*
 !.vscode/extensions.json
-.idea
-.DS_Store
+!.vscode/settings.json
+.idea/
 *.suo
 *.ntvs*
 *.njsproj
 *.sln
 *.sw?
-# Environment files
-.env
-.env.*
-!.env.example
+*.swo
+*.swp
+*~
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+desktop.ini

@@ -45,7 +45,7 @@ export interface LeaderboardPlayer {
  * Calculates aggregate stats summary from a list of sessions
  */
 export function calculateStatsSummary(sessions: TypingSessionRecord[]) {
-  if (!sessions || sessions.length === 0) {
+  if (!Array.isArray(sessions) || sessions.length === 0) {
     return { bestWpm: 0, avgAccuracy: 0, totalTests: 0, total: 0 };
   }
   const totalTests = sessions.length;
@@ -136,7 +136,8 @@ export async function saveTypingSession(record: TypingSessionRecord): Promise<vo
  * 2. If user is signed in, syncs level to Firestore
  */
 export async function saveLevelProgress(newLevel: number): Promise<void> {
-  const boundedLevel = Math.min(50, Math.max(1, newLevel));
+  const currentSaved = secureStorage.getItem<number>('typingGameLevel', 1);
+  const boundedLevel = Math.min(50, Math.max(currentSaved, newLevel));
   try {
     secureStorage.setItem('typingGameLevel', boundedLevel);
     notifyProgressUpdated({
@@ -164,7 +165,7 @@ export async function saveLevelProgress(newLevel: number): Promise<void> {
 /**
  * Synchronizes user data between Firestore and localStorage.
  * Called automatically when user logs in or explicitly when user taps 'Sync Now'.
- * Merges local and cloud stats/level so nothing is lost.
+ * Merges local and cloud stats/level so nothing is lost, while preventing cross-account contamination.
  */
 export async function syncUserProgressWithCloud(currentUser: User): Promise<{
   success: boolean;
@@ -180,42 +181,53 @@ export async function syncUserProgressWithCloud(currentUser: User): Promise<{
     const userRef = doc(db, 'users', currentUser.uid);
     const userSnap = await getDoc(userRef);
 
+    const lastSyncedUid = secureStorage.getItem<string | null>('typlix_current_uid', null);
+    const isDifferentUser = Boolean(lastSyncedUid && lastSyncedUid !== currentUser.uid);
+
     const localLevel = secureStorage.getItem<number>('typingGameLevel', 1);
     const localStats = secureStorage.getItem<TypingSessionRecord[]>('typlix_stats', []);
 
-    let finalLevel = localLevel;
-    let finalStats: TypingSessionRecord[] = localStats;
+    let finalLevel = 1;
+    let finalStats: TypingSessionRecord[] = [];
 
     if (userSnap.exists()) {
       const cloudData = userSnap.data() as Partial<UserCloudData>;
       const cloudLevel = typeof cloudData.typingGameLevel === 'number' ? cloudData.typingGameLevel : 1;
       const cloudStats = Array.isArray(cloudData.typlix_stats) ? cloudData.typlix_stats : [];
 
-      // Highest level wins
-      finalLevel = Math.max(localLevel, cloudLevel);
+      if (isDifferentUser) {
+        // Switched accounts: Take this user's cloud data cleanly without mixing previous user's local cache
+        finalLevel = cloudLevel;
+        finalStats = cloudStats;
+      } else {
+        // Same user or guest upgrading to account: Merge seamlessly
+        finalLevel = Math.max(localLevel, cloudLevel);
 
-      // Merge stats seamlessly by id
-      const statsMap = new Map<string, TypingSessionRecord>();
-      // First insert cloud stats
-      for (const item of cloudStats) {
-        if (item && item.id) {
-          statsMap.set(item.id, item);
+        const statsMap = new Map<string, TypingSessionRecord>();
+        for (const item of cloudStats) {
+          if (item && item.id) statsMap.set(item.id, item);
         }
-      }
-      // Then insert/merge local stats
-      for (const item of localStats) {
-        if (item && item.id) {
-          statsMap.set(item.id, item);
+        for (const item of localStats) {
+          if (item && item.id) statsMap.set(item.id, item);
         }
+        finalStats = Array.from(statsMap.values()).slice(-100);
       }
-
-      // Collect all stats and sort or keep latest 100
-      finalStats = Array.from(statsMap.values()).slice(-100);
-
-      // Save back to local storage so device is in sync
-      secureStorage.setItem('typingGameLevel', finalLevel);
-      secureStorage.setItem('typlix_stats', finalStats);
+    } else {
+      // New cloud profile for this user
+      if (isDifferentUser) {
+        finalLevel = 1;
+        finalStats = [];
+      } else {
+        // Guest user logging in for the first time: transfer their guest progress
+        finalLevel = localLevel;
+        finalStats = localStats;
+      }
     }
+
+    // Save active user ID and synced values to local storage
+    secureStorage.setItem('typlix_current_uid', currentUser.uid);
+    secureStorage.setItem('typingGameLevel', finalLevel);
+    secureStorage.setItem('typlix_stats', finalStats);
 
     const summary = calculateStatsSummary(finalStats);
 
@@ -260,6 +272,21 @@ export async function syncUserProgressWithCloud(currentUser: User): Promise<{
       totalTests: summary.totalTests,
     };
   }
+}
+
+/**
+ * Clears active user identity and resets session stats on logout
+ */
+export function clearLocalProgressOnLogout(): void {
+  secureStorage.removeItem('typlix_current_uid');
+  secureStorage.setItem('typingGameLevel', 1);
+  secureStorage.setItem('typlix_stats', []);
+  notifyProgressUpdated({
+    type: 'logged_out',
+    typingGameLevel: 1,
+    stats: [],
+    summary: { bestWpm: 0, avgAccuracy: 0, totalTests: 0, total: 0 },
+  });
 }
 
 /**
